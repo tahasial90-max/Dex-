@@ -1,0 +1,3821 @@
+-- Clean by Prince Bot | .gg/freesource
+Players = game:GetService("Players")
+UserInputService = game:GetService("UserInputService")
+TweenService = game:GetService("TweenService")
+RunService = game:GetService("RunService")
+HttpService = game:GetService("HttpService")
+Lighting = game:GetService("Lighting")
+Workspace = game:GetService("Workspace")
+Stats = game:GetService("Stats")
+MaterialService = game:GetService("MaterialService")
+ReplicatedStorage = game:GetService("ReplicatedStorage")
+SoundService = game:GetService("SoundService")
+StarterGui = game:GetService("StarterGui")
+CoreGui = game:GetService("CoreGui")
+
+_syn = rawget((getgenv and getgenv()) or _G, "syn") or rawget(_G, "syn")
+
+if type(protectgui) ~= "function" and _syn and type(_syn.protect_gui) == "function" then
+    protectgui = _syn.protect_gui
+end
+
+if type(getcustomasset) ~= "function" then
+    if type(getexecutorasset) == "function" then
+        getcustomasset = getexecutorasset
+    elseif type(getsynasset) == "function" then
+        getcustomasset = getsynasset
+    elseif _syn and type(_syn.getcustomasset) == "function" then
+        getcustomasset = _syn.getcustomasset
+    elseif _syn and type(_syn.getsynasset) == "function" then
+        getcustomasset = _syn.getsynasset
+    end
+end
+
+if type(isfile) ~= "function" and _syn and type(_syn.isfile) == "function" then isfile = _syn.isfile end
+if type(readfile) ~= "function" and _syn and type(_syn.readfile) == "function" then readfile = _syn.readfile end
+if type(writefile) ~= "function" and _syn and type(_syn.writefile) == "function" then writefile = _syn.writefile end
+if type(delfile) ~= "function" and _syn and type(_syn.delfile) == "function" then delfile = _syn.delfile end
+
+if type(getconnections) ~= "function" then
+    if type(get_signal_cons) == "function" then
+        getconnections = get_signal_cons
+    elseif type(getconnects) == "function" then
+        getconnections = getconnects
+    elseif _syn and type(_syn.get_signal_cons) == "function" then
+        getconnections = _syn.get_signal_cons
+    end
+end
+
+function _xluCompatGuiParent()
+    if type(gethui) == "function" then
+        local ok, parent = pcall(gethui)
+        if ok and parent then return parent end
+    end
+    if ok and body and body ~= "" then
+                if myToken ~= searchToken then return end
+
+                if okSearch and body and body ~= "" then
+                    local okJson, data = pcall(function()
+                        return HttpService:JSONDecode(body)
+                    end)
+                    if okJson and type(data) == "table" and type(data.data) == "table" then
+                        local seen = {}
+                        for _, r in ipairs(results) do seen[r.id] = true end
+
+                        for _, item in ipairs(data.data) do
+                            local id = tonumber(item.id)
+                            if id and not seen[id] then
+                                seen[id] = true
+                                table.insert(results, {
+                                    id = id,
+                                    name = tostring(item.name or id),
+                                    displayName = tostring(item.displayName or item.name or id),
+                                    hasVerifiedBadge = item.hasVerifiedBadge == true
+                                })
+                            end
+                        end
+                    end
+                end
+
+                if myToken ~= searchToken then return end
+                searchResults = results
+                renderSearch()
+            end)
+        end
+
+        input:GetPropertyChangedSignal("Text"):Connect(function()
+            local current = input.Text
+            task.delay(0.18, function()
+                if input.Text == current then
+                    searchAnyUser(current)
+                end
+            end)
+        end)
+
+        close.MouseButton1Click:Connect(function()
+            sg:Destroy()
+        end)
+
+        task.spawn(function()
+            local pending = #famousSeeds
+            local seen = {}
+
+            if pending == 0 then
+                status.Text = "NO FEATURED USERS"
+                return
+            end
+
+            for _, seedName in ipairs(famousSeeds) do
+                task.spawn(function()
+                    local okId, uid = pcall(function()
+                        return Players:GetUserIdFromNameAsync(seedName)
+                    end)
+
+                    if okId and uid and uid > 0 and not seen[uid] then
+                        seen[uid] = true
+
+                        local okInfo, body = pcall(function()
+                        end)
+
+                        if okInfo and body and body ~= "" then
+                            local okJson, data = pcall(function()
+                                return HttpService:JSONDecode(body)
+                            end)
+
+                            if okJson and type(data) == "table" then
+                                table.insert(featuredUsers, {
+                                    id = tonumber(data.id) or uid,
+                                    name = tostring(data.name or seedName),
+                                    displayName = tostring(data.displayName or data.name or seedName),
+                                    hasVerifiedBadge = data.hasVerifiedBadge == true
+                                })
+
+                                table.sort(featuredUsers, function(a,b)
+                                    return string.lower(a.displayName or a.name)
+                                        < string.lower(b.displayName or b.name)
+                                end)
+
+                                if input.Text == "" and sg.Parent then
+                                    renderFeatured()
+                                end
+                            end
+                        end
+                    end
+
+                    pending -= 1
+                    if pending <= 0 and input.Text == "" and sg.Parent then
+                        renderFeatured()
+                    end
+                end)
+            end
+        end)
+    end
+
+    LP.CharacterAdded:Connect(function()
+        task.wait(0.35)
+        if XAC.lastUserId then
+            local uid, name = XAC.lastUserId, XAC.lastUsername
+            task.defer(function()
+                spawnAvatar(uid,name or tostring(uid),function() end)
+            end)
+        end
+    end)
+
+    task.defer(function()
+        task.wait(0.5)
+        if XAC.lastUserId and LP.Character then
+            spawnAvatar(XAC.lastUserId, XAC.lastUsername or tostring(XAC.lastUserId), function() end)
+        end
+    end)
+end
+
+_G.AdaptInstallAvatarChanger()
+_G.AdaptInstallAvatarChanger = nil
+
+if _G.AdaptAvatarChangerState then
+    _G.AdaptAvatarChangerState.lastUserId = _G.AdaptSavedAvatarChangerUserId
+    _G.AdaptAvatarChangerState.lastUsername = (_G.AdaptSavedAvatarChangerUsername ~= "" and _G.AdaptSavedAvatarChangerUsername) or nil
+end
+
+do
+    local originalApplyHeadless = _G.AdaptApplyHeadless
+    local originalApplyKorblox = _G.AdaptApplyKorblox
+    local originalApplyCharacterVisuals = _G.AdaptApplyCharacterVisuals
+
+    if originalApplyHeadless then
+        _G.AdaptApplyHeadless = function(char, enabled)
+            originalApplyHeadless(char, enabled)
+
+            local state = _G.AdaptAvatarChangerState
+            local overlay = state and state.model
+            if overlay and overlay.Parent and overlay ~= char then
+                pcall(function()
+                    originalApplyHeadless(overlay, enabled)
+                end)
+            end
+        end
+    end
+
+    if originalApplyKorblox then
+        _G.AdaptApplyKorblox = function(char, enabled)
+            originalApplyKorblox(char, enabled)
+
+            local state = _G.AdaptAvatarChangerState
+            local overlay = state and state.model
+            if overlay and overlay.Parent and overlay ~= char then
+                pcall(function()
+                    originalApplyKorblox(overlay, enabled)
+                end)
+            end
+        end
+    end
+
+    if originalApplyCharacterVisuals then
+        _G.AdaptApplyCharacterVisuals = function(char)
+            originalApplyCharacterVisuals(char)
+
+            local state = _G.AdaptAvatarChangerState
+            local overlay = state and state.model
+            if overlay and overlay.Parent and overlay ~= char then
+                pcall(function()
+                    if originalApplyHeadless then
+                        originalApplyHeadless(overlay, _G.AdaptHeadlessEnabled == true)
+                    end
+                    if originalApplyKorblox then
+                        originalApplyKorblox(overlay, _G.AdaptKorbloxEnabled == true)
+                    end
+                end)
+            end
+        end
+    end
+end
+
+function __AdaptDuelsSetupVisualsUI()
+local Utility = pages.VISUALS
+local skyThemes = SKY_PRESETS_LIST or {"Off", "Night", "Aurora", "Sunset", "Galaxy", "Tech", "Sakura"}
+local skyIndex = 1
+for i, name in ipairs(skyThemes) do if name == skyTheme then skyIndex = i break end end
+function skyThemeSelectorRow(parent, order)
+local row = Instance.new("Frame")
+row.Name = "Sky Theme"
+row.ZIndex = 4
+row.Size = UDim2.new(1,-4,0,52)
+row.BackgroundTransparency = 1
+row.BorderSizePixel = 0
+row.LayoutOrder = order
+row.Parent = parent
+
+local label = Instance.new("TextLabel")
+label.Name = "Label"
+label.ZIndex = 5
+label.Position = UDim2.new(0,2,0,0)
+label.Size = UDim2.new(1,0,0,16)
+label.BackgroundTransparency = 1
+label.Text = "Sky Theme"
+label.TextColor3 = Color3.fromRGB(255,255,255)
+label.TextSize = 12
+label.Font = Enum.Font.GothamBlack
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Parent = row
+
+local left = Instance.new("TextButton")
+left.Name = "SkyLeft"
+left.ZIndex = 6
+left.Position = UDim2.new(0,0,0,22)
+left.Size = UDim2.new(0,44,0,25)
+left.BackgroundColor3 = Color3.fromRGB(8,8,12)
+left.BackgroundTransparency = 0.18
+left.BorderSizePixel = 0
+left.Text = "<"
+left.TextColor3 = Color3.fromRGB(255,255,255)
+left.TextSize = 12
+left.Font = Enum.Font.GothamMedium
+left.AutoButtonColor = false
+left.Parent = row
+corner(left,7)
+stroke(left,COLORS.strokeSoft,1,0.45)
+
+local value = Instance.new("TextButton")
+value.Name = "SkyValue"
+value.ZIndex = 6
+value.Position = UDim2.new(0,48,0,22)
+value.Size = UDim2.new(1,-96,0,28)
+value.BackgroundColor3 = Color3.fromRGB(8,8,12)
+value.BackgroundTransparency = 0.18
+value.BorderSizePixel = 0
+value.Text = skyThemes[skyIndex]
+value.TextColor3 = Color3.fromRGB(255,255,255)
+value.TextSize = 12
+value.Font = Enum.Font.GothamMedium
+value.AutoButtonColor = false
+value.Parent = row
+corner(value,7)
+stroke(value,COLORS.strokeSoft,1,0.45)
+skyValueLabel = value
+
+local right = Instance.new("TextButton")
+right.Name = "SkyRight"
+right.ZIndex = 6
+right.Position = UDim2.new(1,-44,0,22)
+right.Size = UDim2.new(0,44,0,25)
+right.BackgroundColor3 = Color3.fromRGB(8,8,12)
+right.BackgroundTransparency = 0.18
+right.BorderSizePixel = 0
+right.Text = ">"
+right.TextColor3 = Color3.fromRGB(255,255,255)
+right.TextSize = 12
+right.Font = Enum.Font.GothamMedium
+right.AutoButtonColor = false
+right.Parent = row
+corner(right,7)
+stroke(right,COLORS.strokeSoft,1,0.45)
+
+local function setSkyIndex(nextIndex)
+if nextIndex < 1 then nextIndex = #skyThemes end
+if nextIndex > #skyThemes then nextIndex = 1 end
+skyIndex = nextIndex
+skyTheme = skyThemes[skyIndex]
+if applyCustomSky then applyCustomSky(skyTheme) end
+if skyValueLabel then skyValueLabel.Text = skyTheme end
+end
+
+left.Activated:Connect(function() setSkyIndex(skyIndex - 1) end)
+right.Activated:Connect(function() setSkyIndex(skyIndex + 1) end)
+return row
+end
+
+section(Utility, "CHARACTER VISUALS", -3)
+
+_, _G.AdaptHeadlessVisual = toggleRow(Utility, "Headless", _G.AdaptHeadlessEnabled, -2)
+_G.AdaptHeadlessRow = Utility:FindFirstChild("Headless")
+_G.AdaptHeadlessButton = _G.AdaptHeadlessRow and _G.AdaptHeadlessRow:FindFirstChild("ToggleButton")
+if _G.AdaptHeadlessButton then
+_G.AdaptHeadlessButton.Activated:Connect(function()
+_G.AdaptHeadlessEnabled = not _G.AdaptHeadlessEnabled
+_G.AdaptApplyHeadless(LP.Character, _G.AdaptHeadlessEnabled)
+if _G.AdaptHeadlessVisual then _G.AdaptHeadlessVisual(_G.AdaptHeadlessEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+
+_, _G.AdaptKorbloxVisual = toggleRow(Utility, "Korblox", _G.AdaptKorbloxEnabled, -1)
+_G.AdaptKorbloxRow = Utility:FindFirstChild("Korblox")
+_G.AdaptKorbloxButton = _G.AdaptKorbloxRow and _G.AdaptKorbloxRow:FindFirstChild("ToggleButton")
+if _G.AdaptKorbloxButton then
+_G.AdaptKorbloxButton.Activated:Connect(function()
+_G.AdaptKorbloxEnabled = not _G.AdaptKorbloxEnabled
+_G.AdaptApplyKorblox(LP.Character, _G.AdaptKorbloxEnabled)
+if _G.AdaptKorbloxVisual then _G.AdaptKorbloxVisual(_G.AdaptKorbloxEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+
+task.defer(function()
+task.wait(0.8)
+_G.AdaptApplyCharacterVisuals(LP.Character)
+if _G.AdaptHeadlessVisual then _G.AdaptHeadlessVisual(_G.AdaptHeadlessEnabled) end
+if _G.AdaptKorbloxVisual then _G.AdaptKorbloxVisual(_G.AdaptKorbloxEnabled) end
+end)
+
+section(Utility, "ESP", 1)
+do
+local espRow, setESPVisual = toggleRow(Utility, "ESP", espEnabled, 2)
+setPlayerESPVisual = setESPVisual
+_aceBtn = espRow and espRow:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+espEnabled = not espEnabled
+if espEnabled then
+if startPlayerESP then startPlayerESP() end
+if BoxedESPOptions then BoxedESPOptions.box = false end
+else
+if stopPlayerESP then stopPlayerESP() end
+if BoxedESPOptions then BoxedESPOptions.box = false end
+end
+if refreshBoxedESP then refreshBoxedESP() end
+if setESPVisual then setESPVisual(espEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+section(Utility, "SKY THEME", 5)
+skyThemeSelectorRow(Utility, 6)
+
+animationPackRow(Utility, 7)
+
+section(Utility, "PERFORMANCE", 8)
+do
+local row, setVisual = toggleRow(Utility, "Stretch Rez", fpsBoostEnabled, 8)
+setFPSBoostVisual = setVisual
+_aceBtn = row and row:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+fpsBoostEnabled = not fpsBoostEnabled
+if fpsBoostEnabled then enableStretchRez() else disableStretchRez() end
+if setVisual then setVisual(fpsBoostEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+
+do
+local row, setVisual = toggleRow(Utility, "Anti Lag", antiLagVisualEnabled, 10)
+setAntiLagVisual = setVisual
+_aceBtn = row and row:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+if antiLagVisualEnabled then disableAntiLag() else enableAntiLag() end
+if setVisual then setVisual(antiLagVisualEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+do
+local row, setVisual = _G.AdaptActionToggleRow(Utility, "Nuke Optimiser", nukeOptimiserEnabled, 11)
+setNukeOptimiserVisual = setVisual
+_aceBtn = row and row:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+if nukeOptimiserEnabled then disableNukeOptimizer() else enableNukeOptimizer() end
+if setVisual then setVisual(nukeOptimiserEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+section(Utility, "CAMERA", 12)
+do
+local row, setVisual = toggleRow(Utility, "FOV", fovEnabled, 13)
+setFOVVisual = setVisual
+_aceBtn = row and row:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+if fovEnabled then disableCustomFov() else enableCustomFov() end
+if setVisual then setVisual(fovEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+do
+local _, box = textboxRow(Utility, "FOV Value", tostring(fovValue), 14)
+box.FocusLost:Connect(function()
+local v = tonumber(box.Text)
+if v and v >= 30 and v <= 120 then
+fovValue = v
+if fovEnabled and workspace.CurrentCamera then workspace.CurrentCamera.FieldOfView = fovValue end
+end
+box.Text = tostring(fovValue)
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+do
+local row, setVisual = toggleRow(Utility, "No Cam Collision", noCamCollisionEnabled, 15)
+setNoCamCollisionVisual = setVisual
+_aceBtn = row and row:FindFirstChild("ToggleButton")
+if _aceBtn then
+_aceBtn.Activated:Connect(function()
+if noCamCollisionEnabled then disableNoCamCollision() else enableNoCamCollision() end
+if setVisual then setVisual(noCamCollisionEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+end
+task.wait()
+__AdaptDuelsSetupVisualsUI()
+
+function _G.AdaptRestoreFonts()
+    if _G.AdaptFontAddedConn then
+        pcall(function() _G.AdaptFontAddedConn:Disconnect() end)
+        _G.AdaptFontAddedConn = nil
+    end
+    if _G.AdaptFontBackup then
+        for obj, oldFont in pairs(_G.AdaptFontBackup) do
+            pcall(function()
+                if obj and obj.Parent then obj.Font = oldFont end
+            end)
+        end
+    end
+    _G.AdaptFontBackup = {}
+end
+
+function _G.AdaptFontEnum(name)
+    if name == "Coding Font" then return Enum.Font.GothamMedium end
+    if name == "Summer" then return Enum.Font.GothamMedium end
+    if name == "Beachy" then return Enum.Font.GothamMedium end
+    if name == "Scary" then return Enum.Font.GothamMedium end
+    if name == "Bangers" then return Enum.Font.GothamMedium end
+    return nil
+end
+
+function _G.AdaptApplyFontToObject(obj)
+    if not obj then return end
+    if not (obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox")) then return end
+    if not _G.AdaptFontBackup then _G.AdaptFontBackup = {} end
+    if _G.AdaptFontBackup[obj] == nil then
+        pcall(function() _G.AdaptFontBackup[obj] = obj.Font end)
+    end
+    local f = _G.AdaptFontEnum(_G.AdaptCustomFontSelected or "None")
+    if f then pcall(function() obj.Font = f end) end
+end
+
+function _G.AdaptApplyCustomFont(name)
+    _G.AdaptRestoreFonts()
+    _G.AdaptCustomFontSelected = name or "None"
+    customFontVisualEnabled = _G.AdaptCustomFontSelected ~= "None"
+
+    if customFontVisualEnabled then
+        for _, obj in ipairs(PlayerGui:GetDescendants()) do
+            _G.AdaptApplyFontToObject(obj)
+        end
+        _G.AdaptFontAddedConn = PlayerGui.DescendantAdded:Connect(function(obj)
+            if (_G.AdaptCustomFontSelected or "None") ~= "None" then
+                _G.AdaptApplyFontToObject(obj)
+            end
+        end)
+    end
+
+    pcall(function()
+        if saveAdaptConfig then saveAdaptConfig() end
+    end)
+end
+
+function _G.AdaptInstallFontRow()
+    local targetPage = MenuCustomize or pages.MENU
+    if not targetPage or not targetPage.Parent then return end
+    local old = targetPage:FindFirstChild("Custom Font")
+    if old then old:Destroy() end
+
+    local row = Instance.new("Frame")
+    row.Name = "Custom Font"
+    row.BackgroundColor3 = COLORS.row
+    row.BackgroundTransparency = 0.22
+    row.Size = UDim2.new(1, -4, 0, 138)
+    row.BorderSizePixel = 0
+    row.LayoutOrder = 2
+    row.ZIndex = 4
+    row.Parent = targetPage
+    corner(row,10)
+    stroke(row,COLORS.strokeSoft,1.15,0.32)
+
+    local title = Instance.new("TextLabel")
+    title.Name = "Label"
+    title.BackgroundTransparency = 1
+    title.Text = "Custom Font"
+    title.TextColor3 = COLORS.white
+    title.TextSize = 11
+    title.Font = Enum.Font.GothamMedium
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Position = UDim2.new(0,12,0,7)
+    title.Size = UDim2.new(1,-24,0,20)
+    title.ZIndex = 5
+    title.Parent = row
+
+    local names = {"None","Coding Font","Summer","Beachy","Scary","Bangers"}
+
+    local function getPreviewFont(name)
+        if name == "Coding Font" then return Enum.Font.GothamMedium end
+        if name == "Summer" then return Enum.Font.GothamMedium end
+        if name == "Beachy" then return Enum.Font.GothamMedium end
+        if name == "Scary" then return Enum.Font.GothamMedium end
+        if name == "Bangers" then return Enum.Font.GothamMedium end
+        return Enum.Font.GothamMedium
+    end
+
+    local buttons = {}
+
+    local function refreshSelected()
+        for name, btn in pairs(buttons) do
+            local selected = name == (_G.AdaptCustomFontSelected or "None")
+            btn.BackgroundTransparency = selected and 0.03 or 0.18
+            local st = btn:FindFirstChildOfClass("UIStroke")
+            if st then
+                st.Transparency = selected and 0.05 or 0.5
+                st.Thickness = selected and 1.4 or 1
+            end
+        end
+    end
+
+    for i, name in ipairs(names) do
+        local col = (i - 1) % 3
+        local rowIndex = math.floor((i - 1) / 3)
+
+        local btn = Instance.new("TextButton")
+        btn.Name = "Font_" .. name
+        btn.BackgroundColor3 = Color3.fromRGB(10,10,14)
+        btn.BackgroundTransparency = 0.18
+        btn.BorderSizePixel = 0
+        btn.Text = "Abc"
+        btn.TextColor3 = COLORS.white
+        btn.TextSize = 18
+        btn.Font = getPreviewFont(name)
+        btn.AutoButtonColor = false
+        btn.Size = UDim2.new(0, 92, 0, 42)
+        btn.Position = UDim2.new(0, 12 + col * 98, 0, 34 + rowIndex * 48)
+        btn.ZIndex = 6
+        btn.Parent = row
+        corner(btn,8)
+        stroke(btn,COLORS.strokeSoft,1,0.5)
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = name
+        nameLabel.TextColor3 = COLORS.white
+        nameLabel.TextTransparency = 0.22
+        nameLabel.TextSize = 8
+        nameLabel.Font = Enum.Font.GothamMedium
+        nameLabel.Size = UDim2.new(1,0,0,12)
+        nameLabel.Position = UDim2.new(0,0,1,-13)
+        nameLabel.ZIndex = 7
+        nameLabel.Parent = btn
+
+        buttons[name] = btn
+
+        btn.MouseButton1Click:Connect(function()
+            pcall(function()
+                _G.AdaptApplyCustomFont(name)
+            end)
+            refreshSelected()
+        end)
+    end
+
+    refreshSelected()
+end
+
+Settings = pages.SETTINGS
+aceGuiScaleValue = AdaptAutoMobile and 0.52 or 1.00
+aceGuiScaleValue = math.clamp(aceGuiScaleValue, 0.50, 1.50)
+_G.AdaptGuiScaleValue = aceGuiScaleValue
+aceProgressBarScaleValue = AdaptAutoMobile and 0.83 or 1.00
+aceMainScale = Main:FindFirstChild("AdaptMainScale") or Instance.new("UIScale")
+aceMainScale.Name = "AdaptMainScale"
+aceMainScale.Scale = aceGuiScaleValue
+aceMainScale.Parent = Main
+local function applyAdaptProgressBarScale()
+local sg = PlayerGui:FindFirstChild("StealBarGui")
+local bar = sg and sg:FindFirstChild("StealBar")
+if not bar then return end
+local sc = bar:FindFirstChild("AdaptProgressBarScale") or Instance.new("UIScale")
+sc.Name = "AdaptProgressBarScale"
+sc.Scale = aceProgressBarScaleValue
+sc.Parent = bar
+end
+_G.__AdaptDuelsSetupSettingsUI = function()
+section(MenuCustomize, "MENU CUSTOMIZE", 1)
+local bgRow = Instance.new("Frame")
+bgRow.Name = "Background Image Picker"
+bgRow.BackgroundColor3 = Color3.fromRGB(0,0,0)
+bgRow.BackgroundTransparency = 0.3
+bgRow.Size = UDim2.new(1,-4,0,52)
+bgRow.BorderSizePixel = 0
+bgRow.LayoutOrder = 2
+bgRow.ZIndex = 4
+bgRow.Parent = MenuCustomize
+corner(bgRow,11)
+stroke(bgRow,Color3.fromRGB(255,255,255),1.25,0.45)
+
+local bgScroll = Instance.new("ScrollingFrame")
+bgScroll.Name = "BgScroll"
+bgScroll.ZIndex = 5
+bgScroll.Size = UDim2.new(1,-56,1,0)
+bgScroll.Position = UDim2.new(0.5,0,0,0)
+bgScroll.AnchorPoint = Vector2.new(0.5,0)
+bgScroll.BackgroundTransparency = 1
+bgScroll.BorderSizePixel = 0
+bgScroll.ScrollBarThickness = 0
+bgScroll.ScrollBarImageTransparency = 1
+bgScroll.ScrollingDirection = Enum.ScrollingDirection.X
+bgScroll.CanvasSize = UDim2.new(0,0,0,0)
+bgScroll.AutomaticCanvasSize = Enum.AutomaticSize.X
+bgScroll.Parent = bgRow
+
+local bgList = Instance.new("UIListLayout")
+bgList.FillDirection = Enum.FillDirection.Horizontal
+bgList.Padding = UDim.new(0,4)
+bgList.SortOrder = Enum.SortOrder.LayoutOrder
+bgList.VerticalAlignment = Enum.VerticalAlignment.Center
+bgList.Parent = bgScroll
+
+local bgPadding = Instance.new("UIPadding")
+bgPadding.PaddingLeft = UDim.new(0,4)
+bgPadding.PaddingRight = UDim.new(0,4)
+bgPadding.Parent = bgScroll
+
+local bgButtons = {}
+
+function updateBackgroundButtons()
+for index,button in pairs(bgButtons) do
+    local selected = index == currentBackground
+    local st = button:FindFirstChildOfClass("UIStroke")
+    if st then
+        st.Color = selected and Color3.fromRGB(255,255,255) or Color3.fromRGB(80,80,90)
+        st.Transparency = selected and 0 or 0.4
+        st.Thickness = selected and 1.25 or 1
+    end
+    if button:IsA("ImageButton") then
+        button.ImageTransparency = selected and 0 or 0.22
+    end
+end
+end
+
+function makeNoneButton(index, x, y)
+local btn = Instance.new("ImageButton")
+btn.Name = "BgThumbNone"
+btn.ZIndex = 5
+btn.LayoutOrder = 1
+btn.Size = UDim2.new(0,42,0,34)
+btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+btn.BorderSizePixel = 0
+btn.Image = ""
+btn.ImageTransparency = 0.22
+btn.AutoButtonColor = false
+btn.Parent = bgScroll
+corner(btn,9)
+stroke(btn,Color3.fromRGB(80,80,90),1,0.4)
+
+local noneLabel = Instance.new("TextLabel")
+noneLabel.Name = "NoneLabel"
+noneLabel.ZIndex = 6
+noneLabel.Size = UDim2.new(1,0,1,0)
+noneLabel.BackgroundTransparency = 1
+noneLabel.Text = "NONE"
+noneLabel.TextColor3 = COLORS.white
+noneLabel.TextSize = 9
+noneLabel.Font = Enum.Font.GothamMedium
+noneLabel.Parent = btn
+
+bgButtons[index] = btn
+btn.MouseButton1Click:Connect(function()
+    applyBackground(index)
+    updateBackgroundButtons()
+end)
+end
+
+function makeImageButton(index, x, y)
+local thumb = Instance.new("ImageButton")
+thumb.Name = "BgThumb" .. tostring(index)
+thumb.ZIndex = 5
+thumb.LayoutOrder = index + 1
+thumb.Size = UDim2.new(0,42,0,34)
+thumb.BackgroundColor3 = Color3.fromRGB(0,0,0)
+thumb.BorderSizePixel = 0
+thumb.Image = "rbxassetid://" .. tostring(BackgroundIDs[index])
+thumb.ImageTransparency = 0.22
+thumb.ScaleType = Enum.ScaleType.Crop
+thumb.AutoButtonColor = false
+thumb.Parent = bgScroll
+corner(thumb,9)
+stroke(thumb,Color3.fromRGB(80,80,90),1,0.4)
+
+bgButtons[index] = thumb
+thumb.MouseButton1Click:Connect(function()
+    applyBackground(index)
+    updateBackgroundButtons()
+end)
+end
+
+local bgLeft = Instance.new("TextButton")
+bgLeft.Name = "BgArrowLeft"
+bgLeft.ZIndex = 8
+bgLeft.Position = UDim2.new(0,3,0.5,-17)
+bgLeft.Size = UDim2.new(0,22,0,34)
+bgLeft.BackgroundColor3 = Color3.fromRGB(18,18,23)
+bgLeft.BackgroundTransparency = 0.05
+bgLeft.BorderSizePixel = 0
+bgLeft.Text = "<"
+bgLeft.TextColor3 = COLORS.white
+bgLeft.TextSize = 18
+bgLeft.Font = Enum.Font.GothamMedium
+bgLeft.AutoButtonColor = false
+bgLeft.Parent = bgRow
+corner(bgLeft,7)
+
+local bgRight = Instance.new("TextButton")
+bgRight.Name = "BgArrowRight"
+bgRight.ZIndex = 8
+bgRight.Position = UDim2.new(1,-25,0.5,-17)
+bgRight.Size = UDim2.new(0,22,0,34)
+bgRight.BackgroundColor3 = Color3.fromRGB(18,18,23)
+bgRight.BackgroundTransparency = 0.05
+bgRight.BorderSizePixel = 0
+bgRight.Text = ">"
+bgRight.TextColor3 = COLORS.white
+bgRight.TextSize = 18
+bgRight.Font = Enum.Font.GothamMedium
+bgRight.AutoButtonColor = false
+bgRight.Parent = bgRow
+corner(bgRight,7)
+
+bgLeft.MouseButton1Click:Connect(function()
+    local pos = bgScroll.CanvasPosition
+    TweenService:Create(bgScroll,TweenInfo.new(0.2),{
+        CanvasPosition = Vector2.new(math.max(0,pos.X-50),0)
+    }):Play()
+end)
+
+bgRight.MouseButton1Click:Connect(function()
+    local pos = bgScroll.CanvasPosition
+    TweenService:Create(bgScroll,TweenInfo.new(0.2),{
+        CanvasPosition = Vector2.new(pos.X+50,0)
+    }):Play()
+end)
+
+function stepperRow(parent, labelText, defaultValue, order, callback, minValue, maxValue)
+local row = Instance.new("Frame")
+row.Name = labelText
+row.BackgroundColor3 = COLORS.row
+row.BackgroundTransparency = 0.22
+row.Size = UDim2.new(1, -4, 0, 42)
+row.BorderSizePixel = 0
+row.LayoutOrder = order
+row.ZIndex = 4
+row.Parent = parent
+corner(row, 10)
+stroke(row, COLORS.strokeSoft, 1.15, 0.32)
+local label = Instance.new("TextLabel")
+label.Name = "Label"
+label.BackgroundTransparency = 1
+label.Text = labelText
+label.TextColor3 = Color3.fromRGB(245, 245, 255)
+label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+label.TextStrokeTransparency = 1
+label.TextSize = 11
+label.Font = Enum.Font.GothamMedium
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Position = UDim2.new(0, 12, 0, 0)
+label.Size = UDim2.new(1, -155, 1, 0)
+label.ZIndex = 5
+label.Parent = row
+local value = defaultValue
+local minus = Instance.new("TextButton")
+minus.Name = "Minus"
+minus.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+minus.BackgroundTransparency = 0.1
+minus.BorderSizePixel = 0
+minus.Text = "-"
+minus.TextColor3 = Color3.fromRGB(245, 245, 255)
+minus.TextSize = 14
+minus.Font = Enum.Font.GothamMedium
+minus.AutoButtonColor = false
+minus.Size = UDim2.new(0, 28, 0, 26)
+minus.Position = UDim2.new(1, -118, 0.5, -13)
+minus.ZIndex = 6
+minus.Parent = row
+corner(minus, 7)
+stroke(minus, COLORS.strokeSoft, 1, 0.5)
+local valueBox = Instance.new("TextLabel")
+valueBox.Name = "Value"
+valueBox.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+valueBox.BackgroundTransparency = 0.05
+valueBox.BorderSizePixel = 0
+valueBox.Text = string.format("%.2f", value)
+valueBox.TextColor3 = Color3.fromRGB(245, 245, 255)
+valueBox.TextSize = 13
+valueBox.Font = Enum.Font.GothamMedium
+valueBox.TextXAlignment = Enum.TextXAlignment.Center
+valueBox.Size = UDim2.new(0, 48, 0, 26)
+valueBox.Position = UDim2.new(1, -84, 0.5, -13)
+valueBox.ZIndex = 6
+valueBox.Parent = row
+corner(valueBox, 7)
+stroke(valueBox, COLORS.strokeSoft, 1, 0.5)
+local plus = Instance.new("TextButton")
+plus.Name = "Plus"
+plus.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+plus.BackgroundTransparency = 0.1
+plus.BorderSizePixel = 0
+plus.Text = "+"
+plus.TextColor3 = Color3.fromRGB(245, 245, 255)
+plus.TextSize = 14
+plus.Font = Enum.Font.GothamMedium
+plus.AutoButtonColor = false
+plus.Size = UDim2.new(0, 28, 0, 26)
+plus.Position = UDim2.new(1, -30, 0.5, -13)
+plus.ZIndex = 6
+plus.Parent = row
+corner(plus, 7)
+stroke(plus, COLORS.strokeSoft, 1, 0.5)
+local function setValue(nextValue)
+value = math.clamp(math.floor((nextValue * 100) + 0.5) / 100, minValue or 0.50, maxValue or 1.50)
+valueBox.Text = string.format("%.2f", value)
+if callback then callback(value) end
+end
+minus.MouseButton1Click:Connect(function()
+setValue(value - 0.05)
+end)
+plus.MouseButton1Click:Connect(function()
+setValue(value + 0.05)
+end)
+return row
+end
+makeNoneButton(0, 8, 8)
+for index = 1, #BackgroundIDs do
+local slot = index
+local column = slot % 5
+local rowIndex = math.floor(slot / 5)
+makeImageButton(index, 8 + (column * 61), 8 + (rowIndex * 48))
+end
+updateBackgroundButtons()
+
+do
+local colorRow = Instance.new("Frame")
+colorRow.Name = "ColorThemePicker"
+colorRow.BackgroundColor3 = COLORS.row
+colorRow.BackgroundTransparency = 0.3
+colorRow.BorderSizePixel = 0
+colorRow.Size = UDim2.new(1, -4, 0, 34)
+colorRow.LayoutOrder = 3
+colorRow.ZIndex = 4
+colorRow.Parent = MenuCustomize
+corner(colorRow, 9)
+stroke(colorRow, COLORS.strokeSoft, 1.15, 0.38)
+
+local colorOrder = {"PURPLE","BLUE","RED","PINK","YELLOW","GREY","WHITE","FOREST"}
+local activeButton
+
+local function applyThemeColor()
+local tint = _G.AdaptThemeColors[_G.AdaptThemeName] or _G.AdaptThemeColors.WHITE
+
+BgImage.ImageColor3 = tint
+if AdaptLogoAsset then
+AdaptLogoAsset.ImageColor3 = tint
+end
+if TitleSweepText then TitleSweepText.TextColor3 = tint end
+if _G.AdaptIntroTitleSweep and _G.AdaptIntroTitleSweep.Parent then
+_G.AdaptIntroTitleSweep.TextColor3 = tint
+end
+
+THEME_ACCENT = tint
+THEME_ACCENT_DIM = Color3.new(tint.R * 0.62, tint.G * 0.62, tint.B * 0.62)
+
+if PlayerESP and PlayerESP.playerData then
+for _, data in pairs(PlayerESP.playerData) do
+if data.highlight then
+data.highlight.FillColor = tint
+data.highlight.OutlineColor = tint
+end
+if data.billboard then
+for _, obj in ipairs(data.billboard:GetDescendants()) do
+if obj:IsA("TextLabel") then
+obj.TextColor3 = tint
+end
+end
+end
+end
+end
+
+if BoxedESPData then
+for _, data in pairs(BoxedESPData) do
+if data.box then data.box.Color = tint end
+if data.tracer then data.tracer.Color = tint end
+end
+end
+
+if _G.AdaptApplyMobileButtonImage then
+pcall(_G.AdaptApplyMobileButtonImage)
+end
+
+if _G.AdaptApplyStealUIImage then
+pcall(_G.AdaptApplyStealUIImage)
+end
+
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end
+
+for i, colorName in ipairs(colorOrder) do
+local btn = Instance.new("TextButton")
+btn.Name = colorName
+btn.Size = UDim2.new(0, 30, 0, 14)
+btn.Position = UDim2.new(0, 8 + ((i - 1) * 36), 0.5, -7)
+btn.BackgroundColor3 = _G.AdaptThemeColors[colorName]
+btn.BorderSizePixel = 0
+btn.Text = ""
+btn.AutoButtonColor = false
+btn.ZIndex = 6
+btn.Parent = colorRow
+corner(btn, 4)
+
+local border = stroke(btn, COLORS.white, 1, 0.5)
+if colorName == _G.AdaptThemeName then
+activeButton = btn
+border.Transparency = 0
+border.Thickness = 2
+end
+
+btn.MouseButton1Click:Connect(function()
+if activeButton then
+local oldBorder = activeButton:FindFirstChildOfClass("UIStroke")
+if oldBorder then
+oldBorder.Transparency = 0.5
+oldBorder.Thickness = 1
+end
+end
+
+activeButton = btn
+_G.AdaptThemeName = colorName
+
+local newBorder = btn:FindFirstChildOfClass("UIStroke")
+if newBorder then
+newBorder.Transparency = 0
+newBorder.Thickness = 2
+end
+
+applyThemeColor()
+if _G.AdaptApplyMobileButtonImage then pcall(_G.AdaptApplyMobileButtonImage) end
+if _G.AdaptRefreshMobileButtonTheme then pcall(_G.AdaptRefreshMobileButtonTheme) end
+end)
+end
+end
+
+stepperRow(Settings, "GUI Scale", aceGuiScaleValue, 6, function(v)
+aceGuiScaleValue = v
+aceMainScale.Scale = v
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+section(MenuCustomize, "STEAL UI", 20)
+stepperRow(MenuCustomize, "Progress Bar Size", aceProgressBarScaleValue, 7, function(v)
+aceProgressBarScaleValue = v
+applyAdaptProgressBarScale()
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+speedKeybindRow(Settings, "Toggle UI", "ToggleUI", 8)
+section(Settings, "MOBILE BUTTONS", 4)
+do
+local row, setVisual = _G.AdaptActionToggleRow(Settings, "Lock GUI", _G.AdaptGuiLocked == true, 9)
+setLockGuiVisual = setVisual
+local btn = row and row:FindFirstChild("ToggleButton")
+if btn then
+btn.Activated:Connect(function()
+_G.AdaptGuiLocked = not (_G.AdaptGuiLocked == true)
+if setVisual then setVisual(_G.AdaptGuiLocked == true) end
+if AdaptUpdateGuiLockVisual then AdaptUpdateGuiLockVisual() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+do
+local row, setVisual = _G.AdaptActionToggleRow(Settings, "Hide Mobile Buttons", _G.AdaptHideMobileButtons == true, 10)
+setHideMobileButtonsVisual = setVisual
+local btn = row and row:FindFirstChild("ToggleButton")
+if btn then
+btn.Activated:Connect(function()
+_G.AdaptHideMobileButtons = not (_G.AdaptHideMobileButtons == true)
+if setVisual then setVisual(_G.AdaptHideMobileButtons == true) end
+if _G.AdaptApplyMobileButtonsHidden then _G.AdaptApplyMobileButtonsHidden() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+end
+stepperRow(Settings, "Mobile Buttons Size", tonumber(_G.AdaptMobileButtonScale) or 1.00, 11, function(v)
+_G.AdaptMobileButtonScale = math.clamp(tonumber(v) or 0.35, 0.30, 1.35)
+if _G.AdaptApplyMobileButtonSize then _G.AdaptApplyMobileButtonSize() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end, 0.30, 1.35)
+do
+local row = baseRow(Settings, "Mobile Button Shape", 12)
+local shapeButton = Instance.new("TextButton")
+shapeButton.Name = "MobileButtonShapeSelector"
+shapeButton.BackgroundColor3 = Color3.fromRGB(8, 8, 12)
+shapeButton.BackgroundTransparency = 0.05
+shapeButton.BorderSizePixel = 0
+shapeButton.TextColor3 = Color3.fromRGB(245, 245, 255)
+shapeButton.TextSize = 10
+shapeButton.Font = Enum.Font.GothamMedium
+shapeButton.AutoButtonColor = false
+shapeButton.Size = UDim2.new(0, 112, 0, 27)
+shapeButton.Position = UDim2.new(1, -122, 0.5, -13)
+shapeButton.ZIndex = 7
+shapeButton.Parent = row
+corner(shapeButton, 7)
+stroke(shapeButton, COLORS.strokeSoft, 1, 0.45)
+local shapeOrder = {"CIRCLE", "ROUNDED", "SQUARE"}
+local shapeDisplay = {CIRCLE = "CIRCLE", ROUNDED = "ROUNDED", SQUARE = "SQUARE"}
+local function refreshShapeText()
+shapeButton.Text = shapeDisplay[_G.AdaptMobileButtonShape] or "ROUNDED"
+end
+shapeButton.MouseButton1Click:Connect(function()
+local currentIndex = 1
+for i, shape in ipairs(shapeOrder) do
+if shape == _G.AdaptMobileButtonShape then currentIndex = i break end
+end
+currentIndex = (currentIndex % #shapeOrder) + 1
+_G.AdaptMobileButtonShape = shapeOrder[currentIndex]
+refreshShapeText()
+if _G.AdaptApplyMobileButtonShape then _G.AdaptApplyMobileButtonShape() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+refreshShapeText()
+end
+do
+function createHorizontalImagePicker(parent, name, layoutOrder, selectedGetter, selectedSetter, assetIds)
+assetIds = assetIds or BackgroundIDs
+
+local pickerRow = Instance.new("Frame")
+pickerRow.Name = name
+pickerRow.ZIndex = 4
+pickerRow.Size = UDim2.new(1,-4,0,52)
+pickerRow.BackgroundColor3 = Color3.fromRGB(0,0,0)
+pickerRow.BackgroundTransparency = 0.3
+pickerRow.BorderSizePixel = 0
+pickerRow.LayoutOrder = layoutOrder
+pickerRow.Parent = parent
+corner(pickerRow,11)
+stroke(pickerRow,Color3.fromRGB(255,255,255),1.25,0.45)
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Name = "PickerScroll"
+scroll.ZIndex = 5
+scroll.Size = UDim2.new(1,-56,1,0)
+scroll.Position = UDim2.new(0.5,0,0,0)
+scroll.AnchorPoint = Vector2.new(0.5,0)
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.ScrollBarThickness = 0
+scroll.ScrollBarImageTransparency = 1
+scroll.ScrollingDirection = Enum.ScrollingDirection.X
+scroll.CanvasSize = UDim2.new(0,0,0,0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.X
+scroll.Parent = pickerRow
+
+local list = Instance.new("UIListLayout")
+list.FillDirection = Enum.FillDirection.Horizontal
+list.Padding = UDim.new(0,4)
+list.SortOrder = Enum.SortOrder.LayoutOrder
+list.VerticalAlignment = Enum.VerticalAlignment.Center
+list.Parent = scroll
+
+local pad = Instance.new("UIPadding")
+pad.PaddingLeft = UDim.new(0,4)
+pad.PaddingRight = UDim.new(0,4)
+pad.Parent = scroll
+
+local buttons = {}
+
+local function selectedIndex()
+    local current = tostring(selectedGetter() or "")
+    local id = current:match("(%d+)")
+    if not id then return 0 end
+    for i,assetId in ipairs(assetIds) do
+        if tostring(assetId) == tostring(id) then return i end
+    end
+    return 0
+end
+
+local function updateButtons()
+    local selected = selectedIndex()
+    for index,thumb in pairs(buttons) do
+        local on = index == selected
+        local st = thumb:FindFirstChildOfClass("UIStroke")
+        if st then
+            st.Color = on and Color3.fromRGB(255,255,255) or Color3.fromRGB(80,80,90)
+            st.Transparency = on and 0 or 0.4
+            st.Thickness = on and 1.25 or 1
+        end
+        thumb.ImageTransparency = on and 0 or 0.22
+    end
+end
+
+local function choose(index)
+    selectedSetter(index == 0 and "" or ("rbxassetid://" .. tostring(assetIds[index])))
+    updateButtons()
+end
+
+local function makeThumb(index,assetId)
+    local thumb = Instance.new("ImageButton")
+    thumb.Name = "Thumb" .. tostring(index)
+    thumb.ZIndex = 5
+    thumb.LayoutOrder = index + 1
+    thumb.Size = UDim2.new(0,42,0,34)
+    thumb.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    thumb.BorderSizePixel = 0
+    thumb.Image = assetId and ("rbxassetid://" .. tostring(assetId)) or ""
+    thumb.ImageTransparency = 0.22
+    thumb.ScaleType = Enum.ScaleType.Crop
+    thumb.AutoButtonColor = false
+    thumb.Parent = scroll
+    corner(thumb,9)
+    stroke(thumb,Color3.fromRGB(80,80,90),1,0.4)
+
+    if index == 0 then
+        local none = Instance.new("TextLabel")
+        none.Name = "NoneLabel"
+        none.ZIndex = 6
+        none.Size = UDim2.new(1,0,1,0)
+        none.BackgroundTransparency = 1
+        none.Text = "NONE"
+        none.TextColor3 = COLORS.white
+        none.TextSize = 9
+        none.Font = Enum.Font.GothamMedium
+        none.Parent = thumb
+    end
+
+    buttons[index] = thumb
+    thumb.MouseButton1Click:Connect(function() choose(index) end)
+end
+
+makeThumb(0,nil)
+for i,id in ipairs(assetIds) do
+    makeThumb(i,id)
+end
+
+local left = Instance.new("TextButton")
+left.ZIndex = 8
+left.Position = UDim2.new(0,3,0.5,-17)
+left.Size = UDim2.new(0,22,0,34)
+left.BackgroundColor3 = Color3.fromRGB(18,18,23)
+left.BackgroundTransparency = 0.05
+left.BorderSizePixel = 0
+left.Text = "<"
+left.TextColor3 = COLORS.white
+left.TextSize = 18
+left.Font = Enum.Font.GothamMedium
+left.AutoButtonColor = false
+left.Parent = pickerRow
+corner(left,7)
+
+local right = Instance.new("TextButton")
+right.ZIndex = 8
+right.Position = UDim2.new(1,-25,0.5,-17)
+right.Size = UDim2.new(0,22,0,34)
+right.BackgroundColor3 = Color3.fromRGB(18,18,23)
+right.BackgroundTransparency = 0.05
+right.BorderSizePixel = 0
+right.Text = ">"
+right.TextColor3 = COLORS.white
+right.TextSize = 18
+right.Font = Enum.Font.GothamMedium
+right.AutoButtonColor = false
+right.Parent = pickerRow
+corner(right,7)
+
+left.MouseButton1Click:Connect(function()
+    local pos = scroll.CanvasPosition
+    TweenService:Create(scroll,TweenInfo.new(0.2),{
+        CanvasPosition = Vector2.new(math.max(0,pos.X-50),0)
+    }):Play()
+end)
+
+right.MouseButton1Click:Connect(function()
+    local pos = scroll.CanvasPosition
+    TweenService:Create(scroll,TweenInfo.new(0.2),{
+        CanvasPosition = Vector2.new(pos.X+50,0)
+    }):Play()
+end)
+
+updateButtons()
+return pickerRow
+end
+
+section(Settings, "STEAL UI BACKGROUND IMAGE", 48)
+createHorizontalImagePicker(MenuCustomize, "Steal UI Image", 49,
+function()
+return _G.AdaptStealUIImage
+end,
+function(value)
+_G.AdaptStealUIImage = value
+if _G.AdaptApplyStealUIImage then
+_G.AdaptApplyStealUIImage()
+end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+
+do
+local mobilePickerGap = Instance.new("Frame")
+mobilePickerGap.Name = "MobilePickerGap"
+mobilePickerGap.BackgroundTransparency = 1
+mobilePickerGap.BorderSizePixel = 0
+mobilePickerGap.Size = UDim2.new(1, 0, 0, 7)
+mobilePickerGap.LayoutOrder = 13
+mobilePickerGap.Parent = MenuCustomize
+end
+
+createHorizontalImagePicker(MenuCustomize, "Mobile Button Image Picker", 14,
+function() return _G.AdaptMobileButtonImage end,
+function(value)
+_G.AdaptMobileButtonImage = value
+if _G.AdaptApplyMobileButtonImage then _G.AdaptApplyMobileButtonImage() end
+end,
+ButtonImageIDs)
+
+end
+
+do
+local row = baseRow(Settings, "Reset Mobile Buttons", 15)
+local button = Instance.new("TextButton")
+button.Name = "ResetMobileButtons"
+button.BackgroundColor3 = Color3.fromRGB(232, 232, 238)
+button.BackgroundTransparency = 0
+button.BorderSizePixel = 0
+button.Text = "RESET"
+button.TextColor3 = Color3.fromRGB(0, 0, 0)
+button.TextSize = 11
+button.Font = Enum.Font.GothamMedium
+button.AutoButtonColor = false
+button.Size = UDim2.new(0, 78, 0, 26)
+button.Position = UDim2.new(1, -88, 0.5, -13)
+button.ZIndex = 7
+button.Parent = row
+corner(button, 8)
+stroke(button, Color3.fromRGB(255, 255, 255), 1, 0.18)
+button.Activated:Connect(function()
+if _G.AdaptResetMobileButtons then
+_G.AdaptResetMobileButtons()
+else
+_G.AdaptMobileButtonScale = AdaptAutoMobile and 0.90 or 1.00
+_G.AdaptHideMobileButtons = false
+if _G.AdaptApplyMobileButtonsHidden then _G.AdaptApplyMobileButtonsHidden() end
+if _G.AdaptApplyMobileButtonSize then _G.AdaptApplyMobileButtonSize() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end
+end)
+end
+
+section(Settings, "INTRO", 50)
+do
+local row, setVisual = toggleRow(Settings, "Intro", _introEnabled, 51)
+setIntroVisual = setVisual
+local btn = row and row:FindFirstChild("ToggleButton")
+if btn then
+btn.Activated:Connect(function()
+_introEnabled = not _introEnabled
+if not _introEnabled then stopIntroPlayback(); stopIntroPreview() end
+if setIntroVisual then setIntroVisual(_introEnabled) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+if setIntroVisual then setIntroVisual(_introEnabled) end
+end
+do
+local row = Instance.new("Frame")
+row.Name = "Intro Song"
+row.BackgroundColor3 = COLORS.row
+row.BackgroundTransparency = 0.22
+row.Size = UDim2.new(1, -4, 0, 42)
+row.BorderSizePixel = 0
+row.LayoutOrder = 52
+row.ZIndex = 4
+row.Parent = Settings
+corner(row, 10)
+stroke(row, COLORS.strokeSoft, 1.15, 0.32)
+
+local label = Instance.new("TextLabel")
+label.Name = "Label"
+label.BackgroundTransparency = 1
+label.Text = "Intro Song"
+label.TextColor3 = Color3.fromRGB(245,245,255)
+label.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+label.TextStrokeTransparency = 0.25
+label.TextSize = 11
+label.Font = Enum.Font.GothamMedium
+label.TextXAlignment = Enum.TextXAlignment.Left
+label.Position = UDim2.new(0, 12, 0, 0)
+label.Size = UDim2.new(1, -145, 1, 0)
+label.ZIndex = 5
+label.Parent = row
+
+local btn = Instance.new("TextButton")
+btn.Name = "Intro Song Button"
+btn.BackgroundColor3 = Color3.fromRGB(232,232,238)
+btn.BackgroundTransparency = 0
+btn.BorderSizePixel = 0
+btn.Text = getIntroSongName()
+btn.TextColor3 = Color3.fromRGB(0,0,0)
+btn.TextSize = 12
+btn.Font = Enum.Font.GothamBlack
+btn.AutoButtonColor = false
+btn.Size = UDim2.new(0, 118, 0, 28)
+btn.Position = UDim2.new(1, -128, 0.5, -14)
+btn.ZIndex = 6
+btn.Parent = row
+corner(btn, 8)
+stroke(btn, Color3.fromRGB(255,255,255), 1, 0.15)
+
+setIntroSongVisual = function()
+    if btn and btn.Parent then
+        btn.Text = getIntroSongName()
+        btn.TextColor3 = Color3.fromRGB(0,0,0)
+    end
+end
+
+btn.MouseButton1Click:Connect(function()
+    selectedIntroMusic = (tonumber(selectedIntroMusic) or 1) + 1
+    if selectedIntroMusic > #ADAPT_INTRO_MUSIC_OPTIONS then
+        selectedIntroMusic = 1
+    end
+
+    if setIntroSongVisual then setIntroSongVisual() end
+    previewIntroMusic(selectedIntroMusic)
+    if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+
+section(Settings, "SETTINGS", 999)
+local resetHolder = Instance.new("Frame")
+resetHolder.Name = "Reset All Settings Holder"
+resetHolder.BackgroundTransparency = 1
+resetHolder.BorderSizePixel = 0
+resetHolder.Size = UDim2.new(1,-4,0,34)
+resetHolder.LayoutOrder = 1000
+resetHolder.ZIndex = 5
+resetHolder.Parent = Settings
+local resetBtn = Instance.new("TextButton")
+resetBtn.Name = "Reset All Settings"
+resetBtn.BackgroundColor3 = COLORS.row
+resetBtn.BackgroundTransparency = 0.3
+resetBtn.BorderSizePixel = 0
+resetBtn.Text = "RESET ALL SETTINGS"
+resetBtn.TextColor3 = COLORS.white
+resetBtn.TextStrokeTransparency = 1
+resetBtn.TextSize = 12
+resetBtn.Font = Enum.Font.GothamMedium
+resetBtn.AutoButtonColor = false
+resetBtn.Size = UDim2.new(1,0,1,0)
+resetBtn.Position = UDim2.new(0,0,0,0)
+resetBtn.ZIndex = 6
+resetBtn.Parent = resetHolder
+corner(resetBtn,9)
+local resetStroke = Instance.new("UIStroke")
+resetStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+resetStroke.Color = Color3.fromRGB(255, 255, 255)
+resetStroke.Thickness = 1
+resetStroke.Transparency = 0.12
+resetStroke.Parent = resetBtn
+local resetDefaultBg = COLORS.row
+local resetHoverBg = COLORS.row
+local resetConfirmBg = COLORS.row
+local resetDoneBg = COLORS.row
+local resetDefaultText = COLORS.white
+local resetConfirmText = COLORS.white
+local resetDoneText = COLORS.white
+local confirmState = false
+local confirmTimer = nil
+function setResetDefaultTheme()
+confirmState = false
+resetBtn.Text = "RESET ALL SETTINGS"
+resetBtn.TextColor3 = resetDefaultText
+tween(resetBtn, {BackgroundColor3 = resetDefaultBg}, 0.18)
+tween(resetStroke, {Color = Color3.fromRGB(255, 255, 255), Transparency = 0.12, Thickness = 1}, 0.18)
+end
+function setResetConfirmTheme()
+resetBtn.Text = "CLICK AGAIN TO CONFIRM"
+resetBtn.TextColor3 = resetConfirmText
+tween(resetBtn, {BackgroundColor3 = resetConfirmBg}, 0.18)
+tween(resetStroke, {Color = resetConfirmText, Transparency = 0.02, Thickness = 1.4}, 0.18)
+end
+function setResetDoneTheme()
+resetBtn.Text = "DONE - REJOINING..."
+resetBtn.TextColor3 = resetDoneText
+tween(resetBtn, {BackgroundColor3 = resetDoneBg}, 0.18)
+tween(resetStroke, {Color = resetDoneText, Transparency = 0.02, Thickness = 1.4}, 0.18)
+end
+resetBtn.Text = "RESET ALL SETTINGS"
+resetBtn.MouseEnter:Connect(function()
+if not confirmState then
+tween(resetBtn, {BackgroundColor3 = resetHoverBg}, 0.12)
+end
+end)
+
+local saveHolder = Instance.new("Frame")
+saveHolder.Name = "Save Config Holder"
+saveHolder.BackgroundTransparency = 1
+saveHolder.BorderSizePixel = 0
+saveHolder.Size = UDim2.new(1,-4,0,34)
+saveHolder.LayoutOrder = 1001
+saveHolder.ZIndex = 5
+saveHolder.Parent = Settings
+
+local saveBtn = Instance.new("TextButton")
+saveBtn.Name = "Save Config"
+saveBtn.BackgroundColor3 = COLORS.row
+saveBtn.BackgroundTransparency = 0.3
+saveBtn.BorderSizePixel = 0
+saveBtn.Text = "SAVE SETTINGS"
+saveBtn.TextColor3 = resetDefaultText
+saveBtn.TextStrokeTransparency = 1
+saveBtn.TextSize = 12
+saveBtn.Font = Enum.Font.GothamMedium
+saveBtn.AutoButtonColor = false
+saveBtn.Size = UDim2.new(1,0,1,0)
+saveBtn.Position = UDim2.new(0,0,0,0)
+saveBtn.ZIndex = 6
+saveBtn.Parent = saveHolder
+corner(saveBtn,9)
+
+local saveStroke = Instance.new("UIStroke")
+saveStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+saveStroke.Color = Color3.fromRGB(255, 255, 255)
+saveStroke.Thickness = 1
+saveStroke.Transparency = 0.12
+saveStroke.Parent = saveBtn
+
+saveBtn.MouseEnter:Connect(function()
+tween(saveBtn, {BackgroundColor3 = COLORS.row}, 0.12)
+end)
+
+saveBtn.MouseLeave:Connect(function()
+tween(saveBtn, {BackgroundColor3 = COLORS.row}, 0.12)
+end)
+
+saveBtn.MouseButton1Click:Connect(function()
+if _G.AdaptManualSaveConfig then
+local ok = pcall(_G.AdaptManualSaveConfig)
+if ok then
+saveBtn.Text = "SAVED"
+saveBtn.TextColor3 = resetDoneText
+tween(saveBtn, {BackgroundColor3 = resetDoneBg}, 0.18)
+tween(saveStroke, {Color = resetDoneText, Transparency = 0.02, Thickness = 1.4}, 0.18)
+task.delay(0.8, function()
+if saveBtn and saveBtn.Parent then
+saveBtn.Text = "SAVE SETTINGS"
+saveBtn.TextColor3 = resetDefaultText
+tween(saveBtn, {BackgroundColor3 = COLORS.row}, 0.18)
+tween(saveStroke, {Color = Color3.fromRGB(255,255,255), Transparency = 0.12, Thickness = 1}, 0.18)
+end
+end)
+else
+saveBtn.Text = "SAVE FAILED"
+task.delay(0.8, function()
+if saveBtn and saveBtn.Parent then
+saveBtn.Text = "SAVE SETTINGS"
+saveBtn.TextColor3 = resetDefaultText
+end
+end)
+end
+end
+end)
+
+resetBtn.MouseLeave:Connect(function()
+if not confirmState then
+tween(resetBtn, {BackgroundColor3 = resetDefaultBg}, 0.12)
+end
+end)
+resetBtn.MouseButton1Click:Connect(function()
+if not confirmState then
+confirmState = true
+setResetConfirmTheme()
+if confirmTimer then task.cancel(confirmTimer) end
+confirmTimer = task.delay(3, function()
+setResetDefaultTheme()
+end)
+return
+end
+if confirmTimer then
+task.cancel(confirmTimer)
+confirmTimer = nil
+end
+resetBtn.Text = "RESETTING..."
+pcall(function()
+local files = {
+CONFIG_FILE,
+KEYBINDS_CONFIG_FILE,
+"AdaptDuels_MainGUI_Config.json",
+"AdaptDuelsConfig.json",
+"AdaptDuels_Settings.json",
+"AdaptDuels_Keybinds.json",
+"AdaptDuels_GUI.json",
+}
+for _, fname in ipairs(files) do
+pcall(function()
+if fname and isfile and isfile(fname) and delfile then
+delfile(fname)
+end
+end)
+end
+end)
+pcall(function()
+aceGuiScaleValue = AdaptAutoMobile and 0.52 or 1.00
+aceProgressBarScaleValue = AdaptAutoMobile and 0.83 or 1.00
+NS = 60; CS = 30; LAGGER_SPEED = 29; LAGGER_CARRY_SPEED = 15
+currentSpeedMode = "Normal"
+autoCarrySpeedEnabled = false
+autoTPHeight = 20
+autoStealEnabled = false; selectedStealMode = "Auto Steal V3"; autoStealRadius = 63
+_G.AdaptStealRadii = {Normal = 62, Semi = 9}
+selectedAnimationPack = "OFF"; selectedAimbotMode = "Normal"
+AIMBOT_SPEED = 58; LAGGER_AIMBOT_SPEED = 40
+_G.AdaptAntiBypassAimbotSpeed = 58; _G.AdaptAntiBypassLaggerAimbotSpeed = 40; ANTI_DESYNC_AIMBOT_SPEED = 58
+autoSwingEnabled = false; mirrorTPDownEnabled = false; antiDesyncAutoSwingEnabled = false
+_G.AdaptNormalAimbotOn = false; _G.AdaptAntiBypassAimbotOn = false; _G.AdaptAntiDesyncAimbotOn = false
+antiRagdollEnabled = false; infJumpEnabled = false; autoTPEnabled = false
+batCounterEnabled = false; medCounterEnabled = false; antiKickEnabled = false; autoResetOnMedEnabled = false
+espEnabled = false; showTracerEnabled = false; ragdollCountdownEnabled = false
+fpsBoostEnabled = false; antiLagVisualEnabled = false; nukeOptimiserEnabled = false
+fovEnabled = false; fovValue = 70; noCamCollisionEnabled = false; _G.AdaptNoPlayerCollisionEnabled = false
+skyTheme = "Off"; currentBackground = 0
+selectedIntroMusic = 1; _introEnabled = true
+if setIntroVisual then setIntroVisual(_introEnabled) end
+if setIntroSongVisual then setIntroSongVisual() end
+stopIntroPlayback(); stopIntroPreview()
+autoLeftEnabled = false; autoRightEnabled = false
+_G.AdaptGuiLocked = false; _G.AdaptHideMobileButtons = false; _G.AdaptMobileButtonScale = AdaptAutoMobile and 0.90 or 1.00; _G.AdaptMobileButtonShape = "ROUNDED"
+_G.AdaptMobileButtonImage = ""
+_G.AdaptStealUIImage = ""
+aceMainScale.Scale = aceGuiScaleValue
+applyAdaptProgressBarScale()
+applyBackground(0)
+updateBackgroundButtons()
+applyDefaultAdaptKeybinds()
+refreshAllSpeedKeybinds()
+refreshTPDownKeybind()
+if stopAutoTP then stopAutoTP() end
+if stopAntiRagdoll then stopAntiRagdoll() end
+if normalSpeedBox then normalSpeedBox.Text = tostring(NS) end
+if carrySpeedBox then carrySpeedBox.Text = tostring(CS) end
+if laggerSpeedBox then laggerSpeedBox.Text = tostring(LAGGER_SPEED) end
+if laggerCarrySpeedBox then laggerCarrySpeedBox.Text = tostring(LAGGER_CARRY_SPEED) end
+if autoTPHeightBox then autoTPHeightBox.Text = tostring(autoTPHeight) end
+if radiusBox then radiusBox.Text = tostring(autoStealRadius) end
+if _G.AdaptRefreshAimbotSpeedBoxes then _G.AdaptRefreshAimbotSpeedBoxes() end
+if type(applyCustomSky) == "function" then applyCustomSky("Off") end
+if skyValueLabel then skyValueLabel.Text = "Off" end
+if _G.AdaptResetMobileButtons then _G.AdaptResetMobileButtons() end
+pcall(function() if _G.AdaptApplyMobileButtonImage then _G.AdaptApplyMobileButtonImage() end end)
+pcall(function() if _G.AdaptApplyStealUIImage then _G.AdaptApplyStealUIImage() end end)
+if _G.AdaptDuelsApplySavedGameplayStates then _G.AdaptDuelsApplySavedGameplayStates() end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+task.wait(0.35)
+setResetDoneTheme()
+task.wait(0.6)
+pcall(function()
+local TeleportService = game:GetService("TeleportService")
+TeleportService:Teleport(game.PlaceId, Players.LocalPlayer)
+end)
+end)
+end
+task.wait()
+_G.__AdaptDuelsSetupSettingsUI()
+pcall(function() _G.AdaptInstallFontRow() end)
+if (_G.AdaptCustomFontSelected or "None") ~= "None" then
+    task.defer(function()
+        task.wait(0.2)
+        pcall(function() _G.AdaptApplyCustomFont(_G.AdaptCustomFontSelected) end)
+    end)
+end
+if AdaptUpdateGuiLockVisual then AdaptUpdateGuiLockVisual() end
+if _G.AdaptApplyMobileButtonsHidden then _G.AdaptApplyMobileButtonsHidden() end
+
+task.defer(function()
+task.wait(0.05)
+pcall(function()
+    local function hideAll(page)
+        if not page then return end
+        for _,o in ipairs(page:GetChildren()) do
+            if not o:IsA("UIListLayout") and not o:IsA("UIPadding") then
+                o.Visible = false
+            end
+        end
+    end
+    local function showObj(o, order, labelText)
+        if not o then return end
+        o.Visible = true
+        if order then o.LayoutOrder = order end
+        if labelText then
+            if o:IsA("TextLabel") then o.Text = labelText end
+            local lbl = o:FindFirstChild("Label")
+            if lbl then lbl.Text = labelText end
+        end
+    end
+    local function byName(page, name)
+        return page and page:FindFirstChild(name)
+    end
+    local function showNamed(page, name, order, labelText)
+        showObj(byName(page,name), order, labelText)
+    end
+
+    if _G.AdaptDropModeMainRow then
+        _G.AdaptDropModeMainRow.Parent = Movement
+        _G.AdaptDropModeMainRow.LayoutOrder = 10
+    end
+    if _G.AdaptDropSelector then
+        _G.AdaptDropSelector.Parent = Movement
+        _G.AdaptDropSelector.LayoutOrder = 10.1
+    end
+
+    if not byName(Movement,"DROP BRAINROT") then section(Movement,"DROP BRAINROT",9) end
+
+    if not byName(Movement,"TP Down") then
+        local r,setV = _G.AdaptActionToggleRow(Movement,"TP Down",false,12)
+        local b = r and r:FindFirstChild("ToggleButton")
+        if b then
+            b.Activated:Connect(function()
+                if runTPFloor then pcall(runTPFloor) end
+                if setV then
+                    setV(true)
+                    task.delay(0.12,function() pcall(setV,false) end)
+                end
+            end)
+        end
+    end
+
+    if not byName(Movement,"Unwalk") then
+        local r,setV = toggleRow(Movement,"Unwalk",unwalkEnabled,18)
+        local b = r and r:FindFirstChild("ToggleButton")
+        if b then
+            b.Activated:Connect(function()
+                unwalkEnabled = not unwalkEnabled
+                if unwalkEnabled then
+                    if enableUnwalk then pcall(enableUnwalk) end
+                else
+                    if disableUnwalk then pcall(disableUnwalk) end
+                end
+                if setV then setV(unwalkEnabled) end
+            end)
+        end
+    end
+
+    hideAll(Movement)
+    showNamed(Movement,"NORMAL SPEED",1,"SPEED CONFIGURATION")
+    showNamed(Movement,"Normal Speed",2)
+    showNamed(Movement,"Carry Speed",3)
+
+    local modeCount = 0
+    for _,o in ipairs(Movement:GetChildren()) do
+        if o.Name == "Mode" then
+            modeCount = modeCount + 1
+            showObj(o, modeCount == 1 and 4 or 8)
+        end
+    end
+
+    showNamed(Movement,"LAGGER SPEED",5,"LAGGER CONFIGURATION")
+    showNamed(Movement,"Lagger Speed",6,"Lagger Normal Speed")
+    showNamed(Movement,"Lagger Carry Speed",7)
+    showNamed(Movement,"DROP BRAINROT",9)
+    showNamed(Movement,"Drop",10)
+    if _G.AdaptDropSelector then _G.AdaptDropSelector.Visible = _G.AdaptDropExpanded == true end
+    showNamed(Movement,"TELEPORT",11,"TP DOWN")
+    showNamed(Movement,"TP Down",12)
+    showNamed(Movement,"Auto TP Down",13)
+    showNamed(Movement,"Auto TP Height",14)
+    showNamed(Movement,"JUMP",15)
+    showNamed(Movement,"Infinite Jump",16)
+    if _G.AdaptInfJumpSelector then _G.AdaptInfJumpSelector.LayoutOrder=16.1 end
+    showNamed(Movement,"Anti Ragdoll",17)
+    showNamed(Movement,"Anti Ragdoll Mode",18)
+    if _G.AdaptAntiRagdollSelector then
+        _G.AdaptAntiRagdollSelector.Visible = true
+        _G.AdaptAntiRagdollSelector.Size = UDim2.new(1, -4, 0, 42)
+        _G.AdaptAntiRagdollSelector.LayoutOrder = 18
+    end
+    showNamed(Movement,"Unwalk",19)
+
+    if not byName(Combat,"SEMI Range") then
+        local r,b = textboxRow(Combat,"SEMI Range",tostring((_G.AdaptStealRadii and _G.AdaptStealRadii.Semi) or 9),3)
+        b.FocusLost:Connect(function()
+            _G.AdaptStealRadii = _G.AdaptStealRadii or {}
+            local n = tonumber(b.Text)
+            if n then _G.AdaptStealRadii.Semi = math.clamp(n,1,500) end
+            b.Text = tostring(_G.AdaptStealRadii.Semi or 9)
+            if _G.AdaptSemiAutoStealSetRadius then
+                pcall(_G.AdaptSemiAutoStealSetRadius,_G.AdaptStealRadii.Semi or 9)
+            end
+        end)
+    end
+
+    if not byName(Combat,"BAT AIMBOT") then section(Combat,"BAT AIMBOT",5) end
+    if aimbotMainRow then
+        aimbotMainRow.LayoutOrder = 6
+        local l = aimbotMainRow:FindFirstChild("Label")
+        if l then l.Text = "Bat Aimbot" end
+    end
+    if aimbotSpeedRow then
+        aimbotSpeedRow.LayoutOrder = 7
+        local l = aimbotSpeedRow:FindFirstChild("Label")
+        if l then l.Text = "Auto Bat Speed" end
+    end
+    if _G.AdaptNormalAutoSwingRow then _G.AdaptNormalAutoSwingRow.LayoutOrder = 8 end
+    if _G.AdaptMirrorTPDownRow then
+        _G.AdaptMirrorTPDownRow.LayoutOrder = 9
+        local l = _G.AdaptMirrorTPDownRow:FindFirstChild("Label")
+        if l then l.Text = "Mirror TP" end
+    end
+
+    if not byName(Combat,"TP Bat") then
+        local r,setV = _G.AdaptActionToggleRow(Combat,"TP Bat",_G.AdaptAntiDesyncAimbotOn==true,11)
+        local b = r and r:FindFirstChild("ToggleButton")
+        if b then
+            b.Activated:Connect(function()
+                if _G.AdaptToggleAntiDesyncAimbot then pcall(_G.AdaptToggleAntiDesyncAimbot) end
+                if setV then setV(_G.AdaptAntiDesyncAimbotOn==true) end
+            end)
+        end
+    end
+
+    if not byName(Combat,"AUTO PATH") then section(Combat,"AUTO PATH",12) end
+    if not byName(Combat,"Auto Left") then
+        local r,setV = _G.AdaptActionToggleRow(Combat,"Auto Left",autoLeftEnabled,13)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            if _G.AdaptSetAutoLeft then _G.AdaptSetAutoLeft(not autoLeftEnabled) end
+            if setV then setV(autoLeftEnabled) end
+        end) end
+    end
+    if not byName(Combat,"Auto Right") then
+        local r,setV = _G.AdaptActionToggleRow(Combat,"Auto Right",autoRightEnabled,14)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            if _G.AdaptSetAutoRight then _G.AdaptSetAutoRight(not autoRightEnabled) end
+            if setV then setV(autoRightEnabled) end
+        end) end
+    end
+
+    if not byName(Combat,"BODY LOCK") then section(Combat,"BODY LOCK",19) end
+
+    hideAll(Combat)
+    showNamed(Combat,"AUTO STEAL",1,"STEAL CONFIGURATION")
+    showNamed(Combat,"Radius",2)
+    showNamed(Combat,"SEMI Range",3)
+    showNamed(Combat,"Auto Steal",4)
+    if _G.AdaptStealSelector then _G.AdaptStealSelector.LayoutOrder=4.1 end
+
+    showNamed(Combat,"BAT AIMBOT",5)
+    showObj(aimbotMainRow,6)
+    if aimbotSelector then aimbotSelector.LayoutOrder=6.1 end
+    showObj(aimbotSpeedRow,7)
+    showObj(_G.AdaptNormalAutoSwingRow,8)
+    showObj(_G.AdaptMirrorTPDownRow,9)
+
+    showNamed(Combat,"TP BAT",10)
+    showNamed(Combat,"TP Bat",11)
+    showNamed(Combat,"AUTO PATH",12)
+    showNamed(Combat,"Auto Left",13)
+    showNamed(Combat,"Auto Right",14)
+    showNamed(Combat,"COUNTERS",15)
+    showNamed(Combat,"Bat Counter",16)
+    showNamed(Combat,"Med Counter",17,"Medusa Counter")
+    showNamed(Combat,"Auto Reset On Med Fling",18,"Reset After Med")
+    showNamed(Combat,"Auto Instant Reset",18.5,"Insta Reset On Death")
+    showNamed(Combat,"BODY LOCK",19)
+    showNamed(Combat,"Body Lock",20)
+    if _G.AdaptBodyLockSettings then
+        _G.AdaptBodyLockSettings.LayoutOrder=21
+        local l=_G.AdaptBodyLockSettings:FindFirstChild("Label")
+        if l then l.Text="Lock Radius" end
+    end
+
+    showNamed(Combat,"HARD HIT",22)
+    showNamed(Combat,"Hard Hit",23)
+    showNamed(Combat,"Hard Hit Range",24)
+    showNamed(Combat,"Hard Hit Stage+",25)
+    showNamed(Combat,"Stage+ Impulse",26)
+
+    showNamed(Combat,"PERFECT HIT",27)
+    showNamed(Combat,"Perfect Hit",28)
+    showNamed(Combat,"Perfect Hit Range",29)
+
+    showNamed(Combat,"No Player Collision",30)
+    showNamed(Combat,"Safe Mode",31)
+    showNamed(Combat,"Anti Die",32)
+    showNamed(Combat,"Anti Void",33)
+    hideAll(Keybinds)
+    showNamed(Keybinds,"MOVEMENT KEYBINDS",1)
+    showNamed(Keybinds,"Speed Key",2)
+    showNamed(Keybinds,"Lagger Mode Key",3)
+    showNamed(Keybinds,"Drop Brainrot",4,"Drop Key")
+    showNamed(Keybinds,"TP Down",5,"TP Down Key")
+    showNamed(Keybinds,"COMBAT KEYBINDS",6)
+    showNamed(Keybinds,"Normal Aimbot",7,"Bat Aimbot Key")
+    showNamed(Keybinds,"TP BAT",8,"TP Bat Key")
+    showNamed(Keybinds,"Auto Left",9,"Auto Left Key")
+    showNamed(Keybinds,"Auto Right",10,"Auto Right Key")
+    showNamed(Keybinds,"Instant Reset",11,"Insta Reset Key")
+
+    if not byName(Keybinds,"INTERFACE KEYBINDS") then section(Keybinds,"INTERFACE KEYBINDS",12) end
+    showNamed(Keybinds,"INTERFACE KEYBINDS",12)
+
+    local uiToggleRow = byName(Settings,"Toggle UI")
+    if uiToggleRow then
+        uiToggleRow.Parent = Keybinds
+        uiToggleRow.LayoutOrder = 13
+        uiToggleRow.Visible = true
+        local l=uiToggleRow:FindFirstChild("Label")
+        if l then l.Text="UI Toggle Key" end
+    end
+
+    local bgPicker = byName(MenuCustomize,"Background Image Picker")
+    local btnPicker = byName(MenuCustomize,"Mobile Button Image Picker")
+    local colorPicker = byName(MenuCustomize,"ColorThemePicker")
+    local barSize = byName(MenuCustomize,"Progress Bar Size")
+    if bgPicker then bgPicker.Parent=Settings end
+    if btnPicker then btnPicker.Parent=Settings end
+    if colorPicker then colorPicker.Parent=Settings end
+    if barSize then barSize.Parent=Settings end
+
+    hideAll(MenuCustomize)
+
+    local controllerBindButtons = {}
+    local function ctrlBind(label, order)
+        local r=baseRow(MenuCustomize,label,order)
+
+        local b=Instance.new("TextButton")
+        b.Name="ControllerKeybindButton"
+        b.BackgroundColor3=Color3.fromRGB(8,8,12)
+        b.BackgroundTransparency=0.18
+        b.BorderSizePixel=0
+        b.Text="NONE"
+        b.TextColor3=COLORS.white
+        b.TextSize=12
+        b.Font=Enum.Font.GothamMedium
+        b.AutoButtonColor=false
+        b.Size=UDim2.new(0,56,0,22)
+        b.Position=UDim2.new(1,-64,0.5,-11)
+        b.ZIndex=8
+        b.Parent=r
+        corner(b,7)
+        stroke(b,COLORS.strokeSoft,1,0.45)
+
+        local clear=Instance.new("TextButton")
+        clear.Name="ClearControllerKeybindButton"
+        clear.BackgroundColor3=Color3.fromRGB(8,8,12)
+        clear.BackgroundTransparency=0.08
+        clear.BorderSizePixel=0
+        clear.Text=""
+        clear.AutoButtonColor=false
+        clear.Size=UDim2.new(0,18,0,18)
+        clear.Position=UDim2.new(1,-86,0.5,-9)
+        clear.ZIndex=9
+        clear.Parent=r
+        corner(clear,999)
+        stroke(clear,COLORS.strokeSoft,1,0.45)
+
+        clear.MouseButton1Click:Connect(function()
+            b.Text="NONE"
+        end)
+
+        table.insert(controllerBindButtons,b)
+        return r,b
+    end
+
+    local resetCtrl=baseRow(MenuCustomize,"RESET ALL CONTROLLER",1)
+    resetCtrl:FindFirstChild("Label").Text="RESET ALL CONTROLLER"
+    local resetCtrlClick=Instance.new("TextButton")
+    resetCtrlClick.Size=UDim2.new(1,0,1,0)
+    resetCtrlClick.BackgroundTransparency=1
+    resetCtrlClick.Text=""
+    resetCtrlClick.ZIndex=20
+    resetCtrlClick.Parent=resetCtrl
+    resetCtrlClick.MouseButton1Click:Connect(function()
+        for _,b in ipairs(controllerBindButtons) do b.Text="NONE" end
+    end)
+
+    section(MenuCustomize,"MOVEMENT CONTROLLER",2)
+    ctrlBind("Speed Key",3); ctrlBind("Lagger Mode Key",4); ctrlBind("Drop Key",5); ctrlBind("TP Down Key",6)
+    section(MenuCustomize,"COMBAT CONTROLLER",7)
+    ctrlBind("Bat Aimbot Key",8); ctrlBind("TP Bat Key",9); ctrlBind("Auto Left Key",10); ctrlBind("Auto Right Key",11); ctrlBind("Insta Reset Key",12)
+    section(MenuCustomize,"INTERFACE CONTROLLER",13)
+    ctrlBind("UI Toggle Key",14)
+
+    if not byName(Utility,"Animation Pack") then
+        animationPackRow(Utility,7)
+    end
+
+    if not byName(Utility,"Show Tracer") then
+        local r,setV=toggleRow(Utility,"Show Tracer",showTracerEnabled,3)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            showTracerEnabled=not showTracerEnabled
+            if BoxedESPOptions then BoxedESPOptions.tracer=showTracerEnabled end
+            if refreshBoxedESP then pcall(refreshBoxedESP) end
+            if setV then setV(showTracerEnabled) end
+        end) end
+        setTracerESPVisual=setV
+    end
+
+    if not byName(Utility,"Ragdoll Countdown") then
+        local r,setV=toggleRow(Utility,"Ragdoll Countdown",ragdollCountdownEnabled,4)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            ragdollCountdownEnabled=not ragdollCountdownEnabled
+            if ragdollCountdownEnabled then pcall(hookRagdollCountdown,LP.Character) else pcall(stopRagdollCountdown) end
+            if setV then setV(ragdollCountdownEnabled) end
+        end) end
+        setRagdollCountdownVisual=setV
+    end
+
+    if not byName(Utility,"Try Hard Animation") then
+        local r,setV=toggleRow(Utility,"Try Hard Animation",hitHarderAnimEnabled,8)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            hitHarderAnimEnabled=not hitHarderAnimEnabled
+            if hitHarderAnimEnabled then pcall(enableHitHarderAnim) else pcall(disableHitHarderAnim) end
+            if setV then setV(hitHarderAnimEnabled) end
+        end) end
+    end
+
+    do
+    if not pages.VISUALS:FindFirstChild("Costumes") then
+        local row = baseRow(pages.VISUALS, "Costumes", 8)
+        local btn = Instance.new("TextButton")
+        btn.Name = "CostumeSelector"
+        btn.BackgroundColor3 = Color3.fromRGB(8,8,12)
+        btn.BackgroundTransparency = 0.08
+        btn.BorderSizePixel = 0
+        btn.TextColor3 = COLORS.white
+        btn.TextSize = 10
+        btn.Font = Enum.Font.GothamMedium
+        btn.AutoButtonColor = false
+        btn.Size = UDim2.new(0,112,0,27)
+        btn.Position = UDim2.new(1,-122,0.5,-13)
+        btn.ZIndex = 7
+        btn.Parent = row
+        corner(btn,7)
+        stroke(btn,COLORS.strokeSoft,1,0.45)
+
+        local presets = {"ADAPT","RED","BLUE","GALAXY"}
+        local function refreshCostumeText()
+            local current = _G.AdaptOrganizedCostumeCurrent or "ADAPT"
+            btn.Text = tostring(current)
+        end
+
+        btn.Activated:Connect(function()
+            local current = _G.AdaptOrganizedCostumeCurrent or "ADAPT"
+            local idx = 1
+            for i, name in ipairs(presets) do
+                if name == current then idx = i break end
+            end
+            idx = (idx % #presets) + 1
+            if _G.AdaptSetOrganizedCostume then
+                pcall(_G.AdaptSetOrganizedCostume, presets[idx])
+            end
+            refreshCostumeText()
+        end)
+        refreshCostumeText()
+    end
+end
+
+hideAll(Utility)
+    showNamed(Utility,"ESP",1,"PLAYERS")
+    for _,o in ipairs(Utility:GetChildren()) do
+        if o.Name=="ESP" then o.Visible=true end
+    end
+    showNamed(Utility,"Show Tracer",3)
+    showNamed(Utility,"Ragdoll Countdown",4)
+    if not byName(Utility,"VISUAL") then section(Utility,"VISUAL",5) end
+    showNamed(Utility,"VISUAL",5)
+    showNamed(Utility,"Sky Theme",6,"Custom Sky")
+    showNamed(Utility,"Animation Pack",7,"Anim Pack")
+    showNamed(Utility,"Try Hard Animation",9)
+    showNamed(Utility,"PERFORMANCE",10)
+    showNamed(Utility,"Stretch Rez",11,"Stretch Res")
+    showNamed(Utility,"Anti Lag",12,"Anti-Lag")
+    showNamed(Utility,"FOV",13,"FOV Change")
+    showNamed(Utility,"FOV Value",14)
+
+    if not byName(Settings,"Circle Buttons") then
+        local r,setV=_G.AdaptActionToggleRow(Settings,"Circle Buttons",_G.AdaptMobileButtonShape=="CIRCLE",2)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            _G.AdaptMobileButtonShape=(_G.AdaptMobileButtonShape=="CIRCLE") and "ROUNDED" or "CIRCLE"
+            if _G.AdaptApplyMobileButtonShape then _G.AdaptApplyMobileButtonShape() end
+            if setV then setV(_G.AdaptMobileButtonShape=="CIRCLE") end
+        end) end
+    end
+
+    if not byName(Settings,"Move Buttons") then
+        local r,setV=_G.AdaptActionToggleRow(Settings,"Move Buttons",_G.AdaptGuiLocked~=true,5)
+        local b=r and r:FindFirstChild("ToggleButton")
+        if b then b.Activated:Connect(function()
+            _G.AdaptGuiLocked=not (_G.AdaptGuiLocked==true)
+            if setV then setV(_G.AdaptGuiLocked~=true) end
+        end) end
+    end
+
+    if not byName(Settings,"Intro Song") then
+        toggleRow(Settings,"Intro Song",false,8)
+    end
+    if not byName(Settings,"Background Color") then
+        toggleRow(Settings,"Background Color",false,15)
+    end
+
+    hideAll(Settings)
+    showNamed(Settings,"MOBILE BUTTONS",1)
+    showNamed(Settings,"Circle Buttons",2)
+    showNamed(Settings,"Hide Mobile Buttons",3,"Hide Mob Buttons")
+    showNamed(Settings,"Mobile Buttons Size",4,"Button Size %")
+    showNamed(Settings,"Move Buttons",5)
+    showNamed(Settings,"Reset Mobile Buttons",6,"Reset Buttons")
+
+    if not byName(Settings,"INTERFACE") then section(Settings,"INTERFACE",7) end
+    showNamed(Settings,"INTERFACE",7)
+    showNamed(Settings,"Intro Song",8)
+    showNamed(Settings,"Intro",9)
+
+    if not byName(Settings,"BACKGROUND") then section(Settings,"BACKGROUND",10) end
+    showNamed(Settings,"BACKGROUND",10)
+    if bgPicker then showObj(bgPicker,11) end
+
+    if not byName(Settings,"BUTTONS IMAGE") then section(Settings,"BUTTONS IMAGE",12) end
+    showNamed(Settings,"BUTTONS IMAGE",12)
+    if btnPicker then showObj(btnPicker,13) end
+    if colorPicker then showObj(colorPicker,14) end
+    showNamed(Settings,"Background Color",15)
+
+    if not byName(Settings,"UI SCALE") then section(Settings,"UI SCALE",16) end
+    showNamed(Settings,"UI SCALE",16)
+    showNamed(Settings,"GUI Scale",17,"UI Scale")
+    if barSize then
+        showObj(barSize,18,"Steal Bar Size")
+    end
+    showNamed(Settings,"Save Config Holder",19)
+    showNamed(Settings,"Reset All Settings Holder",20)
+end)
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+local isControllerInput = tostring(input.UserInputType):find("Gamepad") ~= nil
+if gameProcessed and input.UserInputType == Enum.UserInputType.Keyboard and not listeningForSpeedKey and not listeningForTPDownKey then return end
+if UserInputService:GetFocusedTextBox() then return end
+if input.UserInputType ~= Enum.UserInputType.Keyboard and not isControllerInput then return end
+if input.KeyCode == Enum.KeyCode.Unknown then return end
+if speedKeybinds.ToggleUI and input.KeyCode == speedKeybinds.ToggleUI then
+if Main.Visible then
+Main.Visible = false
+MiniFrame.Visible = true
+else
+Main.Visible = true
+MiniFrame.Visible = false
+Main.Size = FULL_MAIN_SIZE
+end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+return
+end
+if listeningForSpeedKey then
+if tick() - (keybindListenStartedAt or 0) < 0.18 then return end
+local targetKey = listeningForSpeedKey
+if input.KeyCode == Enum.KeyCode.Escape then
+listeningForSpeedKey = nil
+refreshAllSpeedKeybinds()
+return
+end
+if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+speedKeybinds[targetKey] = nil
+else
+for otherKeyId, boundKey in pairs(speedKeybinds) do
+if otherKeyId ~= targetKey and boundKey == input.KeyCode then
+speedKeybinds[otherKeyId] = nil
+end
+end
+if tpDownKeybind == input.KeyCode then
+tpDownKeybind = nil
+refreshTPDownKeybind()
+end
+speedKeybinds[targetKey] = input.KeyCode
+end
+listeningForSpeedKey = nil
+refreshAllSpeedKeybinds()
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+return
+end
+if listeningForTPDownKey then
+if tick() - (keybindListenStartedAt or 0) < 0.18 then return end
+if input.KeyCode == Enum.KeyCode.Escape then
+listeningForTPDownKey = false
+refreshTPDownKeybind()
+return
+end
+if input.KeyCode == Enum.KeyCode.Backspace or input.KeyCode == Enum.KeyCode.Delete then
+tpDownKeybind = nil
+else
+for keyId, boundKey in pairs(speedKeybinds) do
+if boundKey == input.KeyCode then
+speedKeybinds[keyId] = nil
+end
+end
+tpDownKeybind = input.KeyCode
+end
+listeningForTPDownKey = false
+refreshAllSpeedKeybinds()
+refreshTPDownKeybind()
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+return
+end
+if speedKeybinds.SpeedToggle and input.KeyCode == speedKeybinds.SpeedToggle then
+toggleCarryMode()
+return
+end
+if speedKeybinds.LaggerToggle and input.KeyCode == speedKeybinds.LaggerToggle then
+toggleLaggerMode()
+return
+end
+if speedKeybinds.Aimbot and input.KeyCode == speedKeybinds.Aimbot then
+if _G.AdaptSafeModeIsLocked and _G.AdaptSafeModeIsLocked() then
+if _G.AdaptSafeModeForceStop then _G.AdaptSafeModeForceStop("SAFE MODE LOCK") end
+return
+end
+if _G.AdaptToggleSelectedAimbot then
+_G.AdaptToggleSelectedAimbot()
+elseif selectedAimbotMode == "Anti Bypass" and _G.AdaptStartAntiBypassAimbot and _G.AdaptStopAntiBypassAimbot then
+if _G.AdaptAntiBypassAimbotOn then _G.AdaptStopAntiBypassAimbot() else _G.AdaptStartAntiBypassAimbot() end
+elseif _G.AdaptStartNormalAimbot and _G.AdaptStopNormalAimbot then
+if _G.AdaptNormalAimbotOn then _G.AdaptStopNormalAimbot() else _G.AdaptStartNormalAimbot() end
+end
+if _G.AdaptRefreshAimbotVisual then _G.AdaptRefreshAimbotVisual() end
+return
+end
+if speedKeybinds.AntiDesyncAimbot and input.KeyCode == speedKeybinds.AntiDesyncAimbot then
+if _G.AdaptSafeModeIsLocked and _G.AdaptSafeModeIsLocked() then
+if _G.AdaptSafeModeForceStop then _G.AdaptSafeModeForceStop("SAFE MODE LOCK") end
+return
+end
+if _G.AdaptToggleAntiDesyncAimbot then
+_G.AdaptToggleAntiDesyncAimbot()
+elseif _G.AdaptStartAntiDesyncAimbot and _G.AdaptStopAntiDesyncAimbot then
+if _G.AdaptAntiDesyncAimbotOn then _G.AdaptStopAntiDesyncAimbot() else _G.AdaptStartAntiDesyncAimbot() end
+end
+return
+end
+if speedKeybinds.DropBrainrot and input.KeyCode == speedKeybinds.DropBrainrot then
+runDropBrainrot()
+return
+end
+if speedKeybinds.AutoLeft and input.KeyCode == speedKeybinds.AutoLeft then
+if _G.AdaptSetAutoLeft then _G.AdaptSetAutoLeft(not autoLeftEnabled) end
+return
+end
+if speedKeybinds.AutoRight and input.KeyCode == speedKeybinds.AutoRight then
+if _G.AdaptSetAutoRight then _G.AdaptSetAutoRight(not autoRightEnabled) end
+return
+end
+if tpDownKeybind and input.KeyCode == tpDownKeybind then
+runTPFloor()
+return
+end
+end)
+task.defer(function()
+task.wait(0.15)
+pcall(function()
+for _, pageName in ipairs({"MOVEMENT","COMBAT"}) do
+local page = pages[pageName]
+if page then
+for _, holder in ipairs(page:GetDescendants()) do
+if holder:IsA("Frame") and holder:FindFirstChild("SelectedSlide") then
+holder.Size = UDim2.new(1,-4,0,34)
+holder.BackgroundColor3 = Color3.fromRGB(0,0,0)
+holder.BackgroundTransparency = 0.3
+
+local slide = holder:FindFirstChild("SelectedSlide")
+if slide then
+slide.Size = UDim2.new(0.5,-4,1,-8)
+slide.BackgroundColor3 = Color3.fromRGB(255,255,255)
+slide.BackgroundTransparency = 0.85
+local s = slide:FindFirstChildOfClass("UIStroke")
+if s then
+s.Color = Color3.fromRGB(255,255,255)
+s.Thickness = 1
+s.Transparency = 0.2
+end
+end
+
+for _, child in ipairs(holder:GetChildren()) do
+if child:IsA("TextLabel") or child:IsA("TextButton") then
+child.Font = Enum.Font.GothamMedium
+child.TextSize = 12
+end
+end
+end
+end
+
+for _, obj in ipairs(page:GetDescendants()) do
+if obj:IsA("TextButton") and obj.Name == "ArrowButton" then
+obj.Position = UDim2.new(1,-108,0.5,-13)
+obj.Size = UDim2.new(0,38,0,26)
+obj.BackgroundColor3 = Color3.fromRGB(8,8,12)
+obj.BackgroundTransparency = 0.18
+obj.Text = "â–¼"
+obj.TextColor3 = Color3.fromRGB(255,255,255)
+obj.TextSize = 22
+obj.Font = Enum.Font.GothamBlack
+local c = obj:FindFirstChildOfClass("UICorner")
+if c then c.CornerRadius = UDim.new(0,7) end
+end
+end
+end
+end
+end)
+end)
+
+setTab("MOVEMENT")
+_G.__AdaptDuelsSetupStealBar = function()
+local RunService   = game:GetService("RunService")
+local UIS = UserInputService
+local TS = TweenService
+local Stats        = game:GetService("Stats")
+local existingStealBar = LP:FindFirstChild("PlayerGui") and LP.PlayerGui:FindFirstChild("StealBarGui")
+if existingStealBar then existingStealBar:Destroy() end
+local gui = Instance.new("ScreenGui")
+gui.Name = "StealBarGui"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+safeParentGui(gui)
+function drag(frame)
+local dragging, dragStart, startPos = false, nil, nil
+frame.InputBegan:Connect(function(input)
+if _G.AdaptGuiLocked == true then return end
+if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+dragging = true
+dragStart = input.Position
+startPos = frame.Position
+input.Changed:Connect(function()
+if input.UserInputState == Enum.UserInputState.End then dragging = false end
+end)
+end
+end)
+UIS.InputChanged:Connect(function(input)
+if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+local delta = input.Position - dragStart
+frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+end)
+end
+
+local pbFrame = Instance.new("Frame", gui)
+pbFrame.Name = "StealBar"
+pbFrame.Size = UDim2.new(0, 324, 0, 56)
+pbFrame.Position = UDim2.new(0.5, -162, 1, -70)
+pbFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+pbFrame.BorderSizePixel = 0
+pbFrame.Active = true
+pbFrame.ClipsDescendants = true
+
+local stealWhiteGlow = Instance.new("Frame")
+stealWhiteGlow.Name = "StealWhiteGlow"
+stealWhiteGlow.Size = UDim2.new(1, 0, 1, 0)
+stealWhiteGlow.Position = UDim2.new(0, 0, 0, 0)
+stealWhiteGlow.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+stealWhiteGlow.BackgroundTransparency = 1
+stealWhiteGlow.BorderSizePixel = 0
+stealWhiteGlow.ZIndex = 1
+stealWhiteGlow.Parent = pbFrame
+Instance.new("UICorner", stealWhiteGlow).CornerRadius = UDim.new(0, 15)
+
+local stealWhiteGradient = Instance.new("UIGradient")
+stealWhiteGradient.Rotation = 90
+stealWhiteGradient.Transparency = NumberSequence.new({
+    NumberSequenceKeypoint.new(0, 0.55),
+    NumberSequenceKeypoint.new(0.45, 0.15),
+    NumberSequenceKeypoint.new(1, 0.65)
+})
+stealWhiteGradient.Parent = stealWhiteGlow
+
+local stealBgImage = Instance.new("ImageLabel")
+stealBgImage.Name = "StealUIBackground"
+stealBgImage.BackgroundTransparency = 1
+stealBgImage.Size = UDim2.new(1, 0, 1, 0)
+stealBgImage.Position = UDim2.new(0, 0, 0, 0)
+stealBgImage.ScaleType = Enum.ScaleType.Crop
+stealBgImage.ImageTransparency = 0.28
+stealBgImage.ZIndex = 0
+stealBgImage.Parent = pbFrame
+Instance.new("UICorner", stealBgImage).CornerRadius = UDim.new(0, 15)
+local function normalizeStealUIImage(value)
+value = tostring(value or "")
+if value == "" then return "" end
+if value:match("^rbxassetid://%d+$") then return value end
+local id = value:match("(%d+)")
+return id and ("rbxassetid://" .. id) or ""
+end
+function _G.AdaptApplyStealUIImage()
+local image = normalizeStealUIImage(_G.AdaptStealUIImage)
+stealBgImage.Image = image
+stealBgImage.ImageColor3 = _G.AdaptThemeColors[_G.AdaptThemeName] or _G.AdaptThemeColors.WHITE
+stealBgImage.Visible = image ~= ""
+pbFrame.BackgroundTransparency = image ~= "" and 0.18 or 0
+end
+_G.AdaptApplyStealUIImage()
+Instance.new("UICorner", pbFrame).CornerRadius = UDim.new(0, 15)
+local pbSt = Instance.new("UIStroke", pbFrame)
+pbSt.Color = Color3.fromRGB(55, 55, 55)
+pbSt.Thickness = 1
+drag(pbFrame)
+local pbScale = Instance.new("UIScale")
+pbScale.Name = "AdaptProgressBarScale"
+pbScale.Scale = aceProgressBarScaleValue or 1
+pbScale.Parent = pbFrame
+
+local stealLbl = Instance.new("TextLabel", pbFrame)
+stealLbl.Size = UDim2.new(0, 70, 0, 20)
+stealLbl.Position = UDim2.new(0, 10, 0, 4)
+stealLbl.BackgroundTransparency = 1
+stealLbl.Text = ""
+stealLbl.Visible = false
+stealLbl.TextColor3 = Color3.fromRGB(220, 220, 220)
+stealLbl.Font = Enum.Font.GothamBlack
+stealLbl.TextSize = 12
+stealLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local pingBarLbl = Instance.new("TextLabel", pbFrame)
+pingBarLbl.Size = UDim2.new(0, 150, 0, 14)
+pingBarLbl.Position = UDim2.new(0, 10, 0, 23)
+pingBarLbl.BackgroundTransparency = 1
+pingBarLbl.Text = "0 FPS | 0ms"
+pingBarLbl.TextColor3 = Color3.fromRGB(100, 100, 100)
+pingBarLbl.Font = Enum.Font.GothamBold
+pingBarLbl.TextSize = 11
+pingBarLbl.TextXAlignment = Enum.TextXAlignment.Left
+
+local discordStealLbl = Instance.new("TextLabel", pbFrame)
+discordStealLbl.Name = "Discord"
+discordStealLbl.Size = UDim2.new(0, 140, 0, 14)
+discordStealLbl.Position = UDim2.new(1, -150, 0, 23)
+discordStealLbl.BackgroundTransparency = 1
+discordStealLbl.Text = "discord.gg/adaptt"
+discordStealLbl.TextColor3 = Color3.fromRGB(140, 140, 140)
+discordStealLbl.Font = Enum.Font.GothamBold
+discordStealLbl.TextSize = 10
+discordStealLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+local progressRadLbl = Instance.new("TextLabel", pbFrame)
+progressRadLbl.Size = UDim2.new(0, 190, 0, 14)
+progressRadLbl.Position = UDim2.new(1, -200, 0, 5)
+progressRadLbl.BackgroundTransparency = 1
+progressRadLbl.Text = string.format("Radius: %s", tostring(autoStealRadius))
+progressRadLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+progressRadLbl.Font = Enum.Font.GothamBold
+progressRadLbl.TextSize = 13
+progressRadLbl.TextXAlignment = Enum.TextXAlignment.Right
+
+local pbg = Instance.new("Frame", pbFrame)
+pbg.Size = UDim2.new(1, -18, 0, 12)
+pbg.Position = UDim2.new(0, 9, 1, -17)
+pbg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+pbg.BackgroundTransparency = 0.85
+pbg.BorderSizePixel = 0
+pbg.ClipsDescendants = true
+Instance.new("UICorner", pbg).CornerRadius = UDim.new(1, 0)
+local pbgStroke = Instance.new("UIStroke", pbg)
+pbgStroke.Color = Color3.fromRGB(255, 255, 255)
+pbgStroke.Transparency = 0.65
+pbgStroke.Thickness = 1
+local progressFill = Instance.new("Frame", pbg)
+progressFill.Name = "Fill"
+progressFill.Size = UDim2.new(0, 0, 1, 0)
+progressFill.BackgroundColor3 = Color3.fromRGB(235, 235, 235)
+progressFill.BackgroundTransparency = 0.12
+progressFill.BorderSizePixel = 0
+Instance.new("UICorner", progressFill).CornerRadius = UDim.new(1, 0)
+local progressFillGrad = Instance.new("UIGradient", progressFill)
+progressFillGrad.Rotation = 90
+progressFillGrad.Transparency = NumberSequence.new({
+NumberSequenceKeypoint.new(0, 0.05),
+NumberSequenceKeypoint.new(0.45, 0.35),
+NumberSequenceKeypoint.new(1, 0.05),
+})
+local progressShine = Instance.new("Frame", progressFill)
+progressShine.Size = UDim2.new(1, 0, 0, 3)
+progressShine.Position = UDim2.new(0, 0, 0, 1)
+progressShine.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+progressShine.BackgroundTransparency = 0.35
+progressShine.BorderSizePixel = 0
+Instance.new("UICorner", progressShine).CornerRadius = UDim.new(1, 0)
+
+local progressPct = Instance.new("TextLabel", pbFrame)
+progressPct.Size = UDim2.new(0, 64, 0, 18)
+progressPct.Position = UDim2.new(0, 10, 0, 3)
+progressPct.BackgroundTransparency = 1
+progressPct.Text = "0%"
+progressPct.TextColor3 = Color3.fromRGB(255, 255, 255)
+progressPct.Font = Enum.Font.GothamBlack
+progressPct.TextSize = 14
+progressPct.TextXAlignment = Enum.TextXAlignment.Left
+
+local barState = "IDLE"
+function setBarState(state)
+barState = state
+if state == "STEALING" then
+TS:Create(stealLbl, TweenInfo.new(0.18), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+TS:Create(pbSt, TweenInfo.new(0.22), {
+    Color = Color3.fromRGB(255, 255, 255),
+    Transparency = 0.05,
+    Thickness = 1.6
+}):Play()
+TS:Create(stealWhiteGlow, TweenInfo.new(0.28, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
+    BackgroundTransparency = 0.72
+}):Play()
+TS:Create(progressRadLbl, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(230, 230, 230)}):Play()
+TS:Create(progressPct, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+elseif state == "READY" then
+TS:Create(stealLbl, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+TS:Create(pbSt, TweenInfo.new(0.25), {
+    Color = Color3.fromRGB(90, 90, 90),
+    Transparency = 0,
+    Thickness = 1
+}):Play()
+TS:Create(stealWhiteGlow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+TS:Create(progressRadLbl, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(120, 120, 120)}):Play()
+else
+TS:Create(stealLbl, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 150, 150)}):Play()
+TS:Create(pbSt, TweenInfo.new(0.25), {
+    Color = Color3.fromRGB(55, 55, 55),
+    Transparency = 0,
+    Thickness = 1
+}):Play()
+TS:Create(stealWhiteGlow, TweenInfo.new(0.3), {BackgroundTransparency = 1}):Play()
+TS:Create(progressRadLbl, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(100, 100, 100)}):Play()
+TS:Create(progressPct, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(255, 255, 255)}):Play()
+end
+end
+
+task.spawn(function()
+local lastFrame = tick()
+local fpsSamples = {}
+local fpsAvg = 60
+RunService.RenderStepped:Connect(function()
+local now = tick()
+local dt = now - lastFrame
+lastFrame = now
+if dt > 0 then
+table.insert(fpsSamples, 1 / dt)
+if #fpsSamples > 30 then table.remove(fpsSamples, 1) end
+local sum = 0
+for _, v in ipairs(fpsSamples) do sum = sum + v end
+fpsAvg = sum / #fpsSamples
+end
+end)
+while pbFrame and pbFrame.Parent do
+local ping = 0
+pcall(function()
+local stat = Stats.Network.ServerStatsItem["Data Ping"]
+if stat then ping = tonumber(stat:GetValue()) or 0 end
+end)
+pingBarLbl.Text = string.format("%d FPS | %dms", math.floor(fpsAvg + 0.5), math.floor(ping + 0.5))
+pingBarLbl.TextColor3 = Color3.fromRGB(255,255,255)
+progressRadLbl.Text = string.format("Radius: %s", tostring(autoStealRadius))
+task.wait(0.5)
+end
+end)
+
+local StealBar = {}
+function StealBar.SetProgress(p)
+p = math.clamp(p, 0, 1)
+progressFill.Size = UDim2.new(p, 0, 1, 0)
+progressPct.Text = math.floor(p * 100 + 0.5) .. "%"
+
+if barState == "STEALING" then
+    stealWhiteGlow.BackgroundTransparency = 0.84 - (p * 0.26)
+    progressFill.BackgroundTransparency = 0.18 - (p * 0.12)
+    pbSt.Transparency = math.max(0.02, 0.18 - (p * 0.16))
+end
+end
+function StealBar.Reset()
+StealBar.SetProgress(0)
+setBarState("IDLE")
+end
+function StealBar.SetState(state)
+setBarState(state)
+end
+setBarState("IDLE")
+_G.StealBar = StealBar
+end
+_G.__AdaptDuelsSetupStealBar()
+if _G.AdaptAutoStealSync then task.defer(_G.AdaptAutoStealSync) end
+_G.__AdaptDuelsSetupMinimizeToggle = function()
+_G.__AdaptDuelsMinimized = false
+Close.MouseButton1Click:Connect(function()
+_G.__AdaptDuelsMinimized = not _G.__AdaptDuelsMinimized
+if _G.__AdaptDuelsMinimized then
+Main.Visible = false
+MiniFrame.Visible = true
+else
+Main.Visible = true
+MiniFrame.Visible = false
+Main.Size = FULL_MAIN_SIZE
+end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end)
+end
+_G.__AdaptDuelsSetupMinimizeToggle()
+
+_G.__AdaptDuelsRunIntro = function()
+    local introGuiParent = Gui and Gui.Parent or PlayerGui
+    local origSize = FULL_MAIN_SIZE or Main.Size
+    local wasMinimizedBeforeIntro = (_G.__AdaptDuelsMinimized == true)
+
+    if not _introEnabled then
+        stopIntroPlayback()
+        stopIntroPreview()
+        Main.Size = origSize
+        Main.Visible = not wasMinimizedBeforeIntro
+        MiniFrame.Visible = wasMinimizedBeforeIntro
+        return
+    end
+
+    playIntroMusic()
+    Main.Visible = false
+    MiniFrame.Visible = false
+
+    task.spawn(function()
+        local TweenService = game:GetService("TweenService")
+        local RunService = game:GetService("RunService")
+
+        local DARKER_BG = Color3.fromRGB(5,5,8)
+        local TRAIL_COLOR = Color3.fromRGB(205,215,235)
+
+        local function new(class, props)
+            local inst = Instance.new(class)
+            for k,v in pairs(props or {}) do
+                if k ~= "Parent" then inst[k] = v end
+            end
+            if props and props.Parent then inst.Parent = props.Parent end
+            return inst
+        end
+
+        local function introTween(obj, duration, props, style, dir)
+            local t = TweenService:Create(
+                obj,
+                TweenInfo.new(duration, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out),
+                props
+            )
+            t:Play()
+            return t
+        end
+
+        local oldIntro = introGuiParent:FindFirstChild("AdaptChainIntro")
+        if oldIntro then oldIntro:Destroy() end
+
+        local introGui = new("ScreenGui", {
+            Name = "AdaptChainIntro",
+            IgnoreGuiInset = true,
+            ResetOnSpawn = false,
+            DisplayOrder = 1000,
+            ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+            Parent = introGuiParent,
+        })
+
+        local intro = new("Frame", {
+            Name = "AdaptIntro",
+            ZIndex = 1000,
+            Size = UDim2.new(1,0,1,0),
+            BackgroundColor3 = DARKER_BG,
+            BackgroundTransparency = 0.5,
+            BorderSizePixel = 0,
+            Parent = introGui,
+        })
+
+        local chainStage = new("Frame", {
+            Name = "ChainSpearStage",
+            ZIndex = 1000,
+            AnchorPoint = Vector2.new(0.5,0.5),
+            Position = UDim2.new(0.5,0,0.5,0),
+            Size = UDim2.new(0.64,0,0.64,0),
+            BackgroundTransparency = 1,
+            Parent = intro,
+        })
+        new("UIAspectRatioConstraint",{Parent=chainStage})
+        new("UISizeConstraint",{
+            MinSize=Vector2.new(200,200),
+            MaxSize=Vector2.new(280,280),
+            Parent=chainStage
+        })
+
+        local rotorData = {
+            {rot=-1094.822,trans=0.998},
+            {rot=-1095.4,trans=0.998},
+            {rot=-1095.978,trans=0.996},
+            {rot=-1096.515,trans=0.995},
+            {rot=-1097.052,trans=0.993},
+            {rot=-1097.548,trans=0.991},
+            {rot=-1098.004,trans=0.988},
+            {rot=-1098.419,trans=0.985},
+            {rot=-1098.794,trans=0.982},
+            {rot=-1099.128,trans=0.978},
+            {rot=-1099.421,trans=0.973},
+        }
+
+        for i,data in ipairs(rotorData) do
+            local rotor = new("Frame", {
+                Name="ChainSpearRotor"..i,
+                ZIndex=1000,
+                AnchorPoint=Vector2.new(0.5,0.5),
+                Position=UDim2.new(0.5,0,0.5,0),
+                Size=UDim2.new(1,0,1,0),
+                BackgroundTransparency=1,
+                Rotation=data.rot,
+                Parent=chainStage,
+            })
+
+            new("ImageLabel", {
+                Name="ChainSpearTrail"..i,
+                ZIndex=1000,
+                AnchorPoint=Vector2.new(0.73,0.02),
+                Position=UDim2.new(0.5,0,0.5,0),
+                Size=UDim2.new(0.553,0,0.829,0),
+                BackgroundTransparency=1,
+                Image="rbxassetid://118963313877514",
+                ImageColor3=TRAIL_COLOR,
+                ImageTransparency=data.trans,
+                ScaleType=Enum.ScaleType.Fit,
+                Parent=rotor,
+            })
+        end
+
+        local introLogo = new("ImageLabel", {
+            Name="IntroBanner",
+            ZIndex=1002,
+            AnchorPoint=Vector2.new(0.5,0.5),
+            Position=UDim2.new(0.5,0,0.50,0),
+            Size=UDim2.new(0.34,0,0,70),
+            BackgroundTransparency=1,
+            Image="rbxassetid://135088241492683",
+            ImageTransparency=0,
+            ScaleType=Enum.ScaleType.Fit,
+            Parent=intro,
+        })
+
+        local tapAnywhere = new("TextLabel", {
+            Name="TapAnywhere",
+            ZIndex=1003,
+            AnchorPoint=Vector2.new(0.5,0.5),
+            Position=UDim2.new(0.5,0,0.50,48),
+            Size=UDim2.new(0.7,0,0,20),
+            BackgroundTransparency=1,
+            Text="TAP ANYWHERE TO SKIP",
+            TextColor3=Color3.fromRGB(255,255,255),
+            TextStrokeColor3=Color3.fromRGB(0,0,0),
+            TextStrokeTransparency=0.2,
+            TextSize=11,
+            Font=Enum.Font.GothamBlack,
+            Parent=intro,
+        })
+
+        local discordInvite = new("TextLabel", {
+            Name="DiscordInvite",
+            ZIndex=1003,
+            AnchorPoint=Vector2.new(0.5,0.5),
+            Position=UDim2.new(0.5,0,0.50,68),
+            Size=UDim2.new(0.7,0,0,18),
+            BackgroundTransparency=1,
+            Text="discord.gg/adaptt",
+            TextColor3=Color3.fromRGB(255,255,255),
+            TextStrokeColor3=Color3.fromRGB(0,0,0),
+            TextStrokeTransparency=0.25,
+            TextSize=10,
+            Font=Enum.Font.GothamBlack,
+            Parent=intro,
+        })
+
+        local tapCatcher = new("TextButton", {
+            Name="TapCatcher",
+            ZIndex=1004,
+            Size=UDim2.new(1,0,1,0),
+            BackgroundTransparency=1,
+            Text="",
+            AutoButtonColor=false,
+            Parent=intro,
+        })
+
+        local skipped = false
+
+        local function finishIntro()
+            if skipped then return end
+            skipped = true
+
+            stopIntroPlayback()
+            stopIntroPreview()
+
+            introTween(intro,0.3,{BackgroundTransparency=1})
+
+            for _,obj in ipairs(chainStage:GetDescendants()) do
+                if obj:IsA("ImageLabel") then
+                    introTween(obj,0.25,{ImageTransparency=1})
+                end
+            end
+
+            introTween(introLogo,0.25,{ImageTransparency=1})
+            introTween(tapAnywhere,0.25,{TextTransparency=1,TextStrokeTransparency=1})
+            introTween(discordInvite,0.25,{TextTransparency=1,TextStrokeTransparency=1})
+
+            task.delay(0.35,function()
+                if introGui then introGui:Destroy() end
+                Main.Size = origSize
+                Main.Visible = not wasMinimizedBeforeIntro
+                MiniFrame.Visible = wasMinimizedBeforeIntro
+            end)
+        end
+
+        tapCatcher.MouseButton1Click:Connect(finishIntro)
+
+        task.wait(0.15)
+        if skipped then return end
+
+        for i,rotor in ipairs(chainStage:GetChildren()) do
+            if rotor:IsA("Frame") and rotor.Name:match("ChainSpearRotor") then
+                local trail = rotor:FindFirstChildWhichIsA("ImageLabel")
+                if trail then
+                    task.delay((i-1)*0.035,function()
+                        if skipped or not trail.Parent then return end
+                        introTween(trail,0.45,{ImageTransparency=0.12})
+                    end)
+                end
+
+                task.spawn(function()
+                    local speed = 0.38 + (i*0.045)
+                    while not skipped and rotor.Parent do
+                        rotor.Rotation = rotor.Rotation + speed
+                        RunService.Heartbeat:Wait()
+                    end
+                end)
+            end
+        end
+
+        task.spawn(function()
+            while not skipped and tapAnywhere.Parent do
+                introTween(tapAnywhere,0.65,{TextTransparency=0.48})
+                task.wait(0.65)
+                if skipped then break end
+                introTween(tapAnywhere,0.65,{TextTransparency=0})
+                task.wait(0.65)
+            end
+        end)
+
+        task.wait(12.0)
+        if not skipped then finishIntro() end
+    end)
+end
+_G.__AdaptDuelsRunIntro()
+
+_G.AdaptDuelsForceSyncLoadedButtons = function()
+pcall(function()
+if setAutoTPVisual then setAutoTPVisual(autoTPEnabled) end
+if autoTPEnabled then startAutoTP() else stopAutoTP() end
+end)
+pcall(function()
+if setInfJumpVisual then setInfJumpVisual(infJumpEnabled) end
+if setInfJumpInternal then setInfJumpInternal(infJumpEnabled) end
+end)
+pcall(function()
+if setAntiRagdollVisual then setAntiRagdollVisual(antiRagdollEnabled) end
+setAntiRagdoll(antiRagdollEnabled)
+end)
+pcall(function()
+if _G.AdaptSetAutoLeft then _G.AdaptSetAutoLeft(autoLeftEnabled, true) end
+if _G.AdaptSetAutoRight then _G.AdaptSetAutoRight(autoRightEnabled, true) end
+end)
+pcall(function()
+if setAutoStealVisual then setAutoStealVisual(autoStealEnabled) end
+if _G.AdaptAutoStealSync then _G.AdaptAutoStealSync() end
+end)
+pcall(function()
+if _G.AdaptNormalAutoSwingSetVisual then _G.AdaptNormalAutoSwingSetVisual(autoSwingEnabled) end
+if _G.AdaptMirrorTPDownSetVisual then _G.AdaptMirrorTPDownSetVisual(mirrorTPDownEnabled) end
+if _G.AdaptAntiDesyncAutoSwingSetVisual then _G.AdaptAntiDesyncAutoSwingSetVisual(antiDesyncAutoSwingEnabled) end
+if _G.AdaptAntiDesyncSetVisual then _G.AdaptAntiDesyncSetVisual(_G.AdaptAntiDesyncAimbotOn == true) end
+if _G.AdaptAntiDesyncAimbotOn and _G.AdaptStartAntiDesyncAimbot then
+_G.AdaptStartAntiDesyncAimbot()
+elseif _G.AdaptStopAntiDesyncAimbot then
+_G.AdaptStopAntiDesyncAimbot()
+end
+end)
+pcall(function()
+if selectedAimbotMode == "Anti Bypass" then
+if _G.AdaptNormalAimbotStop then _G.AdaptNormalAimbotStop() end
+if _G.AdaptAntiBypassAimbotOn and _G.AdaptAntiBypassStart then
+_G.AdaptAntiBypassStart()
+elseif _G.AdaptAntiBypassStop then
+_G.AdaptAntiBypassStop()
+end
+else
+if _G.AdaptAntiBypassStop then _G.AdaptAntiBypassStop() end
+if _G.AdaptNormalAimbotOn and _G.AdaptNormalAimbotStart then
+_G.AdaptNormalAimbotStart()
+elseif _G.AdaptNormalAimbotStop then
+_G.AdaptNormalAimbotStop()
+end
+end
+if _G.AdaptRefreshAimbotVisual then _G.AdaptRefreshAimbotVisual() end
+end)
+pcall(function()
+if setBatCounterVisual then setBatCounterVisual(batCounterEnabled) end
+if setMedCounterVisual then setMedCounterVisual(medCounterEnabled) end
+if setSafeModeVisual then setSafeModeVisual(antiKickEnabled) end
+if batCounterEnabled then
+if _G.AdaptStartBatCounter then _G.AdaptStartBatCounter() end
+else
+if _G.AdaptStopBatCounter then _G.AdaptStopBatCounter() end
+end
+if medCounterEnabled then
+if _G.AdaptStartMedCounter then _G.AdaptStartMedCounter(LP.Character) end
+else
+if _G.AdaptStopMedCounter then _G.AdaptStopMedCounter() end
+end
+if _G.AdaptSetNoPlayerCollisionVisual then _G.AdaptSetNoPlayerCollisionVisual(_G.AdaptNoPlayerCollisionEnabled) end
+if _G.AdaptNoPlayerCollisionEnabled then
+if enableNoPlayerCollision then enableNoPlayerCollision() end
+else
+if disableNoPlayerCollision then disableNoPlayerCollision() end
+end
+if _G.AdaptSetAutoResetOnMed then
+_G.AdaptSetAutoResetOnMed(autoResetOnMedEnabled, true)
+else
+if setAutoResetOnMedVisual then setAutoResetOnMedVisual(autoResetOnMedEnabled) end
+end
+end)
+pcall(function()
+if setPlayerESPVisual then setPlayerESPVisual(espEnabled) end
+if espEnabled then if startPlayerESP then startPlayerESP() end; if BoxedESPOptions then BoxedESPOptions.box = false end else if stopPlayerESP then stopPlayerESP() end; if BoxedESPOptions then BoxedESPOptions.box = false end end
+if setTracerESPVisual then setTracerESPVisual(showTracerEnabled) end
+if BoxedESPOptions then BoxedESPOptions.tracer = false end
+if refreshBoxedESP then refreshBoxedESP() end
+if setRagdollCountdownVisual then setRagdollCountdownVisual(ragdollCountdownEnabled) end
+if ragdollCountdownEnabled then hookRagdollCountdown(LP.Character) else stopRagdollCountdown() end
+if setFPSBoostVisual then setFPSBoostVisual(fpsBoostEnabled) end
+if fpsBoostEnabled then enableStretchRez() else disableStretchRez() end
+if setAntiLagVisual then setAntiLagVisual(antiLagVisualEnabled) end
+if antiLagVisualEnabled then enableAntiLag() else disableAntiLag() end
+if setNukeOptimiserVisual then setNukeOptimiserVisual(nukeOptimiserEnabled) end
+if nukeOptimiserEnabled then enableNukeOptimizer() else disableNukeOptimizer() end
+if setFOVVisual then setFOVVisual(fovEnabled) end
+if fovEnabled then enableCustomFov() else disableCustomFov() end
+if setNoCamCollisionVisual then setNoCamCollisionVisual(noCamCollisionEnabled) end
+if noCamCollisionEnabled then enableNoCamCollision() else disableNoCamCollision() end
+if type(applyCustomSky) == "function" then
+applyCustomSky((skyTheme and skyTheme ~= "") and skyTheme or "Off")
+end
+if skyValueLabel then skyValueLabel.Text = skyTheme or "Off" end
+end)
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end
+task.defer(function()
+task.wait(0.35)
+if type(applyCustomSky) == "function" then
+pcall(function() applyCustomSky((skyTheme and skyTheme ~= "") and skyTheme or "Off") end)
+end
+if skyValueLabel then skyValueLabel.Text = skyTheme or "Off" end
+end)
+task.defer(_G.AdaptDuelsForceSyncLoadedButtons)
+task.delay(1, function()
+if _G.AdaptDuelsForceSyncLoadedButtons then _G.AdaptDuelsForceSyncLoadedButtons() end
+end)
+task.defer(function()
+task.wait(0.2)
+if _G.AdaptSyncToggleVisuals then _G.AdaptSyncToggleVisuals() end
+end)
+customFontVisualEnabled = false
+if V then V.customFontEnabled = false end
+function enableCustomFont() customFontVisualEnabled=false; if V then V.customFontEnabled=false end end
+function disableCustomFont() customFontVisualEnabled=false; if V then V.customFontEnabled=false end end
+_G.AdaptDuelsApplySavedGameplayStates = function()
+pcall(function()
+if setAutoTPVisual then setAutoTPVisual(autoTPEnabled == true) end
+if autoTPEnabled then startAutoTP() else stopAutoTP() end
+end)
+pcall(function()
+if setInfJumpVisual then setInfJumpVisual(infJumpEnabled == true) end
+if setInfJumpInternal then setInfJumpInternal(infJumpEnabled == true) end
+end)
+pcall(function()
+if setAntiRagdollVisual then setAntiRagdollVisual(antiRagdollEnabled == true) end
+if setAntiRagdoll then setAntiRagdoll(antiRagdollEnabled == true) end
+end)
+pcall(function()
+if _G.AdaptAntiVoidVisual then _G.AdaptAntiVoidVisual(_G.AdaptAntiVoidEnabled == true) end
+_G.AdaptAntiVoidSet(_G.AdaptAntiVoidEnabled == true)
+end)
+pcall(function()
+if _G.AdaptAntiResetVisual then _G.AdaptAntiResetVisual(_G.AdaptAntiResetEnabled == true) end
+_G.AdaptSetAntiReset(_G.AdaptAntiResetEnabled == true)
+end)
+pcall(function()
+if setAutoStealVisual then setAutoStealVisual(autoStealEnabled == true) end
+if _G.AdaptAutoStealSync then _G.AdaptAutoStealSync() end
+end)
+pcall(function()
+if setBatCounterVisual then setBatCounterVisual(batCounterEnabled == true) end
+if batCounterEnabled and _G.AdaptStartBatCounter then _G.AdaptStartBatCounter() elseif _G.AdaptStopBatCounter then _G.AdaptStopBatCounter() end
+end)
+pcall(function()
+if setMedCounterVisual then setMedCounterVisual(medCounterEnabled == true) end
+if medCounterEnabled and _G.AdaptStartMedCounter then _G.AdaptStartMedCounter(LP.Character) elseif _G.AdaptStopMedCounter then _G.AdaptStopMedCounter() end
+end)
+pcall(function()
+if setHardHitVisual then setHardHitVisual(hardHitEnabled == true) end
+if hardHitEnabled and _G.AdaptStartHardHit then _G.AdaptStartHardHit() elseif _G.AdaptStopHardHit then _G.AdaptStopHardHit() end
+end)
+pcall(function()
+if setPerfectHitVisual then setPerfectHitVisual(perfectHitEnabled == true) end
+if perfectHitEnabled and _G.AdaptStartPerfectHit then _G.AdaptStartPerfectHit() elseif _G.AdaptStopPerfectHit then _G.AdaptStopPerfectHit() end
+end)
+pcall(function()
+if _G.AdaptSetNoPlayerCollisionVisual then _G.AdaptSetNoPlayerCollisionVisual(_G.AdaptNoPlayerCollisionEnabled == true) end
+if _G.AdaptNoPlayerCollisionEnabled then enableNoPlayerCollision() else disableNoPlayerCollision() end
+end)
+pcall(function()
+if setSafeModeVisual then setSafeModeVisual(antiKickEnabled == true) end
+end)
+pcall(function()
+if _G.AdaptSetAutoResetOnMed then _G.AdaptSetAutoResetOnMed(autoResetOnMedEnabled == true, true) end
+end)
+pcall(function()
+if setPlayerESPVisual then setPlayerESPVisual(espEnabled == true) end
+if espEnabled then if startPlayerESP then startPlayerESP() end else if stopPlayerESP then stopPlayerESP() end end
+end)
+pcall(function()
+if setTracerESPVisual then setTracerESPVisual(showTracerEnabled == true) end
+if BoxedESPOptions then BoxedESPOptions.tracer = showTracerEnabled == true end
+if refreshBoxedESP then refreshBoxedESP() end
+end)
+pcall(function()
+if setRagdollCountdownVisual then setRagdollCountdownVisual(ragdollCountdownEnabled == true) end
+if ragdollCountdownEnabled then hookRagdollCountdown(LP.Character) else stopRagdollCountdown() end
+end)
+pcall(function()
+if setFPSBoostVisual then setFPSBoostVisual(fpsBoostEnabled == true) end
+if fpsBoostEnabled then enableStretchRez() else disableStretchRez() end
+end)
+pcall(function()
+if setAntiLagVisual then setAntiLagVisual(antiLagVisualEnabled == true) end
+if antiLagVisualEnabled then enableAntiLag() else disableAntiLag() end
+end)
+pcall(function()
+if setNukeOptimiserVisual then setNukeOptimiserVisual(nukeOptimiserEnabled == true) end
+if nukeOptimiserEnabled then enableNukeOptimizer() else disableNukeOptimizer() end
+end)
+pcall(function()
+if setFOVVisual then setFOVVisual(fovEnabled == true) end
+if fovEnabled then enableCustomFov() else disableCustomFov() end
+end)
+pcall(function()
+if setNoCamCollisionVisual then setNoCamCollisionVisual(noCamCollisionEnabled == true) end
+if noCamCollisionEnabled then enableNoCamCollision() else disableNoCamCollision() end
+end)
+pcall(function()
+if type(applyCustomSky) == "function" then applyCustomSky((skyTheme and skyTheme ~= "") and skyTheme or "Off") end
+if skyValueLabel then skyValueLabel.Text = skyTheme or "Off" end
+end)
+pcall(function()
+if syncAnimationPackIndex then syncAnimationPackIndex() end
+if refreshAnimationPackRow then refreshAnimationPackRow() end
+if applySavedAnimationPackToCharacter then applySavedAnimationPackToCharacter(LP.Character) end
+end)
+end
+task.defer(function()
+task.wait(0.25)
+if _G.AdaptDuelsApplySavedGameplayStates then _G.AdaptDuelsApplySavedGameplayStates() end
+end)
+task.delay(1.25, function()
+if _G.AdaptDuelsApplySavedGameplayStates then _G.AdaptDuelsApplySavedGameplayStates() end
+end)
+task.delay(3, function()
+if antiLagVisualEnabled and type(applyKTMOptimization) == "function" then pcall(applyKTMOptimization) end
+if nukeOptimiserEnabled and type(applyKTMOptimization) == "function" then pcall(applyKTMOptimization) end
+end)
+_G.AdaptAutoTPRestoreWanted = _G.AdaptAutoTPRestoreWanted or false
+_G.AdaptAutoTPRestoreBlockedUntil = _G.AdaptAutoTPRestoreBlockedUntil or 0
+function aceAnyAimbotActive()
+return (_G.AdaptNormalAimbotOn == true) or (_G.AdaptAntiBypassAimbotOn == true) or (_G.AdaptAntiDesyncAimbotOn == true) or (_G.AdaptAntiDesyncAimbotOn == true)
+end
+_G.AdaptStopAutoTPForAction = function()
+if autoTPEnabled then
+_G.AdaptAutoTPRestoreWanted = true
+_G.AdaptAutoTPRestoreBlockedUntil = tick() + 0.35
+stopAutoTP()
+if setAutoTPVisual then setAutoTPVisual(false) end
+end
+end
+function aceTryRestoreAutoTP()
+if not _G.AdaptAutoTPRestoreWanted then return end
+if tick() < (_G.AdaptAutoTPRestoreBlockedUntil or 0) then return end
+if aceAnyAimbotActive() then return end
+if dropBrainrotActive then return end
+_G.AdaptAutoTPRestoreWanted = false
+startAutoTP()
+if setAutoTPVisual then setAutoTPVisual(true) end
+if saveAdaptConfig then pcall(saveAdaptConfig) end
+end
+RunService.Heartbeat:Connect(aceTryRestoreAutoTP)
+_G._oldAdaptStopNormalAimbot = _G.AdaptStopNormalAimbot
+_G.AdaptStopNormalAimbot = function(...)
+local r = {_G._oldAdaptStopNormalAimbot(...)}
+_G.AdaptAutoTPRestoreBlockedUntil = tick() + 0.05
+task.delay(0.08, aceTryRestoreAutoTP)
+return unpack(r)
+end
+_G.AdaptNormalAimbotStop = _G.AdaptStopNormalAimbot
+_G._oldAdaptStopAntiBypassAimbot = _G.AdaptStopAntiBypassAimbot
+_G.AdaptStopAntiBypassAimbot = function(...)
+local r = {_G._oldAdaptStopAntiBypassAimbot(...)}
+_G.AdaptAutoTPRestoreBlockedUntil = tick() + 0.05
+task.delay(0.08, aceTryRestoreAutoTP)
+return unpack(r)
+end
+_G.AdaptAntiBypassStop = _G.AdaptStopAntiBypassAimbot
+_G._oldAdaptStopAntiDesyncAimbot = _G.AdaptStopAntiDesyncAimbot
+_G.AdaptStopAntiDesyncAimbot = function(...)
+local r = {_G._oldAdaptStopAntiDesyncAimbot(...)}
+_G.AdaptAutoTPRestoreBlockedUntil = tick() + 0.05
+task.delay(0.08, aceTryRestoreAutoTP)
+return unpack(r)
+end
+task.spawn(function()
+local wasDropping = false
+while task.wait(0.05) do
+if dropBrainrotActive then
+wasDropping = true
+elseif wasDropping then
+wasDropping = false
+_G.AdaptAutoTPRestoreBlockedUntil = tick() + 0.05
+task.delay(0.08, aceTryRestoreAutoTP)
+end
+end
+end)
+function aceRepairKeybinds()
+for keyId, defaultKey in pairs(DEFAULT_SPEED_KEYBINDS) do
+if speedKeybinds[keyId] == nil or speedKeybinds[keyId] == Enum.KeyCode.Unknown then
+speedKeybinds[keyId] = defaultKey
+end
+end
+if speedKeybinds.AntiDesyncAimbot == nil then
+speedKeybinds.AntiDesyncAimbot = Enum.KeyCode.V
+end
+if tpDownKeybind == Enum.KeyCode.Unknown then tpDownKeybind = DEFAULT_TP_DOWN_KEYBIND end
+if refreshAllSpeedKeybinds then refreshAllSpeedKeybinds() end
+if refreshTPDownKeybind then refreshTPDownKeybind() end
+end
+_G._oldSaveAdaptConfigStable = saveAdaptConfig
+saveAdaptConfig = function()
+aceRepairKeybinds()
+return _G._oldSaveAdaptConfigStable()
+end
+aceRepairKeybinds()
+task.defer(function()
+task.wait(0.2)
+aceRepairKeybinds()
+do end
+end)
+task.defer(function()
+task.wait(0.35)
+local TS = game:GetService("TweenService")
+for _, oldName in ipairs({"AdaptMobileButtons", "AdaptMobileButtons"}) do
+local old = PlayerGui:FindFirstChild(oldName)
+if old then old:Destroy() end
+end
+local mobileGui = Instance.new("ScreenGui")
+mobileGui.Name = "AdaptMobileButtons"
+mobileGui.ResetOnSpawn = false
+mobileGui.IgnoreGuiInset = true
+mobileGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+mobileGui.DisplayOrder = 1000
+safeParentGui(mobileGui)
+mobileGui.Enabled = not (_G.AdaptHideMobileButtons == true)
+_G.AdaptMobileButtonRefs = {}
+local mobileButtons = _G.AdaptMobileButtonRefs
+function _G.AdaptApplyMobileButtonsHidden()
+local shouldHide = (_G.AdaptHideMobileButtons == true)
+
+local g = nil
+pcall(function()
+    g = PlayerGui:FindFirstChild("AdaptMobileButtons")
+end)
+
+if not g then
+    pcall(function()
+        local cg = game:GetService("CoreGui")
+        g = cg and cg:FindFirstChild("AdaptMobileButtons")
+    end)
+end
+
+if not g and gethui then
+    pcall(function()
+        local hui = gethui()
+        g = hui and hui:FindFirstChild("AdaptMobileButtons")
+    end)
+end
+
+if not g and mobileGui and mobileGui.Parent then
+    g = mobileGui
+end
+
+if g then
+    g.Enabled = not shouldHide
+end
+
+if setHideMobileButtonsVisual then
+    pcall(setHideMobileButtonsVisual, shouldHide)
+end
+end
+local function normalizeMobileImage(value)
+value = tostring(value or ""):gsub("^%s+", ""):gsub("%s+$", "")
+if value == "" then return "" end
+local id = value:match("^(%d+)$")
+if id then return "rbxassetid://" .. id end
+local embedded = value:match("[?&]id=(%d+)") or value:match("/(%d+)[/%?]?")
+if embedded then return "rbxassetid://" .. embedded end
+return value
+end
+function _G.AdaptRefreshMobileButtonTheme()
+    local refs = _G.AdaptMobileButtonRefs or {}
+    for key, entry in pairs(refs) do
+        local btn = entry and entry.btn
+        if btn then
+            btn:SetAttribute("AdaptMobileVisualState", nil)
+            local on = false
+            if key == "autoLeft" then on = autoLeftEnabled == true
+            elseif key == "autoRight" then on = autoRightEnabled == true
+            elseif key == "aimbot" then on = (_G.AdaptNormalAimbotOn == true) or (_G.AdaptAntiBypassAimbotOn == true)
+            elseif key == "antiDesync" then on = _G.AdaptAntiDesyncAimbotOn == true
+            elseif key == "carry" then on = currentSpeedMode == "Carry"
+            elseif key == "laggerNormal" then on = currentSpeedMode == "Lagger" or currentSpeedMode == "Lagger Carry"
+            elseif btn:GetAttribute("AdaptMobilePressed") == true then on = true
+            end
+            if entry.setActive then
+                pcall(entry.setActive, on)
+            end
+        end
+    end
+end
+function _G.AdaptApplyMobileButtonImage()
+local image = normalizeMobileImage(_G.AdaptMobileButtonImage)
+for _, entry in pairs(mobileButtons) do
+local btn = entry and entry.btn
+local img = btn and btn:FindFirstChild("MobileBackgroundImage")
+if img then
+img.Image = image
+img.ImageColor3 = _G.AdaptThemeColors[_G.AdaptThemeName] or _G.AdaptThemeColors.WHITE
+img.Visible = image ~= ""
+end
+end
+end
+function _G.AdaptApplyMobileButtonShape()
+local shape = tostring(_G.AdaptMobileButtonShape or "ROUNDED"):upper()
+if shape ~= "CIRCLE" and shape ~= "SQUARE" and shape ~= "ROUNDED" then shape = "ROUNDED" end
+_G.AdaptMobileButtonShape = shape
+for key, entry in pairs(mobileButtons) do
+local btn = entry and entry.btn
+local holder = entry and entry.holder
+if btn and holder then
+local isSquare = shape == "SQUARE"
+holder.Size = UDim2.new(0,58,0,58)
+btn.Font = Enum.Font.GothamMedium
+btn.TextSize = 10
+local textOverlay = btn:FindFirstChild("MobileButtonText")
+if textOverlay then
+textOverlay.Font = btn.Font
+textOverlay.TextSize = btn.TextSize
+end
+local radius = UDim.new(0,10)
+if shape == "CIRCLE" then radius = UDim.new(1,0) end
+if isSquare then radius = UDim.new(0,10) end
+local c = btn:FindFirstChildOfClass("UICorner")
+if c then c.CornerRadius = radius end
+local img = btn:FindFirstChild("MobileBackgroundImage")
+local ic = img and img:FindFirstChildOfClass("UICorner")
+if ic then ic.CornerRadius = radius end
+local glow = holder:FindFirstChild("Glow")
+local gc = glow and glow:FindFirstChildOfClass("UICorner")
+if gc then gc.CornerRadius = radius end
+local dot = btn:FindFirstChild("Dot")
+if isSquare then
+if not dot then
+ dot = Instance.new("Frame")
+ dot.Name = "Dot"
+ dot.Size = UDim2.new(0, 6, 0, 6)
+ dot.Position = UDim2.new(1, -12, 0, 7)
+ dot.BackgroundColor3 = Color3.fromRGB(80,80,95)
+ dot.BorderSizePixel = 0
+ dot.ZIndex = btn.ZIndex + 2
+ dot.Parent = btn
+ Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
+end
+dot.Visible = true
+else
+if dot then dot.Visible = false end
+end
+end
+end
+end
+function _G.AdaptApplyMobileButtonSize()
+_G.AdaptMobileButtonScale = math.clamp(tonumber(_G.AdaptMobileButtonScale) or 1.00, 0.30, 1.35)
+for _, entry in pairs(mobileButtons) do
+local holder = entry and entry.holder
+if holder then
+local sc = holder:FindFirstChild("MobileButtonScale") or Instance.new("UIScale")
+sc.Name = "MobileButtonScale"
+sc.Scale = _G.AdaptMobileButtonScale
+sc.Parent = holder
+end
+end
+pcall(function()
+local gui = PlayerGui:FindFirstChild("AdaptDuelsAdaptReconstruct") or PlayerGui:FindFirstChild("AdaptHubPolished") or PlayerGui:FindFirstChild("CyberHub")
+local root = gui or PlayerGui
+for _, obj in ipairs(root:GetDescendants()) do
+if obj.Name == "Mobile Buttons Size" then
+local valueBox = obj:FindFirstChild("Value")
+if valueBox and valueBox:IsA("TextLabel") then
+valueBox.Text = string.format("%.2f", _G.AdaptMobileButtonScale)
+end
+end
+end
+end)
+end
+local function setActive(btn, state)
+if not btn then return end
+local pressed = btn:GetAttribute("AdaptMobilePressed") == true
+state = (state == true) or pressed
+local visualState = state and "on" or "off"
+if btn:GetAttribute("AdaptMobileVisualState") == visualState then return end
+btn:SetAttribute("AdaptMobileVisualState", visualState)
+local holder = btn.Parent
+local glow = holder and holder:FindFirstChild("Glow")
+local st = btn:FindFirstChildOfClass("UIStroke")
+local textOverlay = btn:FindFirstChild("MobileButtonText")
+local noneBg = btn:FindFirstChild("ButtonNoneBackground")
+local noneGrad = noneBg and noneBg:FindFirstChild("ButtonNoneGradient")
+local dot = btn:FindFirstChild("Dot")
+local themeCol = (_G.AdaptThemeColors and _G.AdaptThemeColors[_G.AdaptThemeName]) or Color3.fromRGB(0, 0, 0)
+local isWhiteTheme = (themeCol.R > 0.9 and themeCol.G > 0.9 and themeCol.B > 0.9)
+local onBg = (isWhiteTheme and Color3.fromRGB(0, 0, 0)) or themeCol
+local offBg = Color3.fromRGB(255, 255, 255)
+if noneGrad then noneGrad.Enabled = false end
+if noneBg then
+noneBg.BackgroundTransparency = 0
+TS:Create(noneBg, TweenInfo.new(0.18), {
+BackgroundColor3 = state and onBg or offBg
+}):Play()
+end
+if textOverlay then
+TS:Create(textOverlay, TweenInfo.new(0.18), {
+TextColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(0, 0, 0),
+}):Play()
+end
+if st then
+TS:Create(st, TweenInfo.new(0.18), {
+Color = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(30, 30, 35),
+Thickness = 1.1,
+Transparency = state and 0.45 or 0.35,
+}):Play()
+end
+if dot and dot.Visible then
+TS:Create(dot, TweenInfo.new(0.16), {
+BackgroundColor3 = state and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(40, 40, 50),
+}):Play()
+end
+if glow then
+glow.Visible = false
+glow.BackgroundTransparency = 1
+local gs = glow:FindFirstChildOfClass("UIStroke")
+if gs then gs.Transparency = 1 end
+end
+end
+local function pulse(btn)
+if not btn then return end
+btn:SetAttribute("AdaptMobilePressed", true)
+setActive(btn, true)
+task.delay(0.18, function()
+if btn and btn.Parent then
+btn:SetAttribute("AdaptMobilePressed", false)
+setActive(btn, false)
+end
+end)
+end
+local function makeButton(key, label, pos, onPress, customSize)
+local holder = Instance.new("Frame")
+holder.Name = "MBH_" .. key
+holder.Size = customSize or UDim2.new(0,58,0,58)
+holder.Position = getSavedMobileButtonPosition(key, pos)
+holder.BackgroundTransparency = 1
+holder.BorderSizePixel = 0
+holder.ZIndex = 1000
+holder.Active = true
+holder.Parent = mobileGui
+local glow = Instance.new("Frame", holder)
+glow.Name = "Glow"
+glow.Size = UDim2.new(1, 4, 1, 4)
+glow.Position = UDim2.new(0, -2, 0, -2)
+glow.BackgroundColor3 = Color3.fromRGB(255,255,255)
+glow.BackgroundTransparency = 1
+glow.BorderSizePixel = 0
+glow.ZIndex = 1000
+Instance.new("UICorner", glow).CornerRadius = UDim.new(0, 13)
+local glowStroke = Instance.new("UIStroke", glow)
+glowStroke.Color = Color3.fromRGB(255,255,255)
+glowStroke.Thickness = 0.8
+glowStroke.Transparency = 1
+glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+local btn = Instance.new("TextButton", holder)
+btn.Name = "MB_" .. key
+btn.Size = UDim2.new(1, 0, 1, 0)
+btn.Position = UDim2.new(0, 0, 0, 0)
+btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+btn.BackgroundTransparency = 1
+btn.BorderSizePixel = 0
+btn.Text = label
+btn.TextColor3 = Color3.fromRGB(255,255,255)
+btn.Font = Enum.Font.GothamMedium
+btn.TextSize = 11
+btn.TextWrapped = true
+btn.AutoButtonColor = false
+btn.ZIndex = 1002
+btn.Active = true
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+
+local noneBg = Instance.new("ImageLabel", btn)
+noneBg.Name = "ButtonNoneBackground"
+noneBg.Size = UDim2.new(1,0,1,0)
+noneBg.Position = UDim2.new(0,0,0,0)
+noneBg.BackgroundColor3 = Color3.fromRGB(255,255,255)
+noneBg.BorderSizePixel = 0
+noneBg.ZIndex = btn.ZIndex
+noneBg.Parent = btn
+Instance.new("UICorner", noneBg).CornerRadius = UDim.new(0,10)
+
+local noneGrad = Instance.new("UIGradient", noneBg)
+noneGrad.Name = "ButtonNoneGradient"
+noneGrad.Enabled = false
+noneGrad.Rotation = 25
+noneGrad.Color = ColorSequence.new({
+ColorSequenceKeypoint.new(0,Color3.fromRGB(22,22,25)),
+ColorSequenceKeypoint.new(0.18,Color3.fromRGB(2,2,3)),
+ColorSequenceKeypoint.new(0.82,Color3.fromRGB(2,2,3)),
+ColorSequenceKeypoint.new(1,Color3.fromRGB(22,22,25))
+})
+noneBg.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+noneBg.BackgroundTransparency = 0
+
+local bgImage = Instance.new("ImageLabel", btn)
+bgImage.Name = "MobileBackgroundImage"
+bgImage.BackgroundTransparency = 1
+bgImage.BorderSizePixel = 0
+bgImage.Size = UDim2.new(1, 0, 1, 0)
+bgImage.Position = UDim2.new(0, 0, 0, 0)
+bgImage.Image = normalizeMobileImage(_G.AdaptMobileButtonImage)
+bgImage.ImageColor3 = _G.AdaptThemeColors[_G.AdaptThemeName] or _G.AdaptThemeColors.WHITE
+bgImage.ImageTransparency = 0.18
+bgImage.ScaleType = Enum.ScaleType.Crop
+bgImage.Visible = bgImage.Image ~= ""
+bgImage.ZIndex = btn.ZIndex
+local bgCorner = Instance.new("UICorner", bgImage)
+bgCorner.CornerRadius = UDim.new(0,10)
+local textOverlay = Instance.new("TextLabel", btn)
+textOverlay.Name = "MobileButtonText"
+textOverlay.BackgroundTransparency = 1
+textOverlay.Size = UDim2.new(1, -8, 1, -8)
+textOverlay.Position = UDim2.new(0, 4, 0, 4)
+textOverlay.Text = label
+textOverlay.TextColor3 = Color3.fromRGB(0,0,0)
+textOverlay.TextStrokeColor3 = Color3.fromRGB(0,0,0)
+textOverlay.TextStrokeTransparency = 1
+textOverlay.Font = Enum.Font.GothamBlack
+textOverlay.TextSize = 11
+textOverlay.TextWrapped = true
+textOverlay.TextXAlignment = Enum.TextXAlignment.Center
+textOverlay.TextYAlignment = Enum.TextYAlignment.Center
+textOverlay.ZIndex = btn.ZIndex + 1
+local mobileTextStroke = Instance.new("UIStroke", textOverlay)
+mobileTextStroke.Thickness = 1.4
+mobileTextStroke.Transparency = 0
+btn.TextTransparency = 1
+local stroke = Instance.new("UIStroke", btn)
+stroke.Color = Color3.fromRGB(255,255,255)
+stroke.Thickness = 1.1
+stroke.Transparency = 0.55
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+local pressing, dragging = false, false
+local pressPos, holderStart = nil, nil
+btn.InputBegan:Connect(function(i)
+if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+pressing = true
+dragging = false
+pressPos = i.Position
+holderStart = holder.Position
+btn:SetAttribute("AdaptMobilePressed", true)
+setActive(btn, true)
+pcall(function()
+TS:Create(btn, TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+Position = UDim2.new(0, 0, 0, 4),
+Size = UDim2.new(1, 0, 1, -4)
+}):Play()
+end)
+end
+end)
+btn.InputEnded:Connect(function(i)
+if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+if pressing and not dragging then pcall(onPress, btn) end
+if dragging then do end end
+pressing = false
+dragging = false
+btn:SetAttribute("AdaptMobilePressed", false)
+pcall(function()
+TS:Create(btn, TweenInfo.new(0.10, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+Position = UDim2.new(0, 0, 0, 0),
+Size = UDim2.new(1, 0, 1, 0)
+}):Play()
+end)
+task.delay(0.08, function()
+if btn and btn.Parent then
+local keepOn = false
+if key == "autoLeft" then keepOn = autoLeftEnabled == true
+elseif key == "autoRight" then keepOn = autoRightEnabled == true
+elseif key == "aimbot" then keepOn = (_G.AdaptNormalAimbotOn == true) or (_G.AdaptAntiBypassAimbotOn == true)
+elseif key == "antiDesync" then keepOn = _G.AdaptAntiDesyncAimbotOn == true
+elseif key == "carry" then keepOn = currentSpeedMode == "Carry"
+elseif key == "laggerNormal" then keepOn = currentSpeedMode == "Lagger"
+elseif key == "laggerCarry" then keepOn = currentSpeedMode == "Lagger Carry"
+end
+setActive(btn, keepOn)
+end
+end)
+end
+end)
+UserInputService.InputChanged:Connect(function(i)
+if _G.AdaptGuiLocked == true or not pressing then return end
+if i.UserInputType ~= Enum.UserInputType.MouseMovement and i.UserInputType ~= Enum.UserInputType.Touch then return end
+local delta = i.Position - pressPos
+if not dragging and (math.abs(delta.X) > 6 or math.abs(delta.Y) > 6) then dragging = true end
+if dragging then
+holder.Position = UDim2.new(holderStart.X.Scale, holderStart.X.Offset + delta.X, holderStart.Y.Scale, holderStart.Y.Offset + delta.Y)
+saveMobileButtonPosition(key, holder.Position)
+end
+end)
+mobileButtons[key] = {holder = holder, btn = btn, setActive = function(state) setActive(btn, state) end}
+return btn
+end
+
+local AdaptResetCooldown = false
+local AdaptResetThread = nil
+local AdaptResetCharacter = nil
+local AdaptResetSuccessful = false
+local AdaptStopResetSequence = false
+local AdaptCameraLocked = false
+local AdaptLockedCameraCFrame = nil
+local AdaptResetMaxDuration = 0.05
+
+function _G.AdaptInstantReset()
+if AdaptResetCooldown then return end
+AdaptResetCooldown = true
+AdaptResetSuccessful = false
+AdaptStopResetSequence = false
+AdaptCameraLocked = false
+
+local character = LP.Character
+if not character then
+AdaptResetCooldown = false
+return
+end
+
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+if not humanoid then
+AdaptResetCooldown = false
+return
+end
+
+local camera = workspace.CurrentCamera
+if camera then
+AdaptLockedCameraCFrame = camera.CFrame
+AdaptCameraLocked = true
+camera.CFrame = AdaptLockedCameraCFrame
+end
+
+AdaptResetCharacter = character
+local isRespawning = false
+
+AdaptResetThread = task.spawn(function()
+local attempts = 0
+local maxAttempts = 40
+local originalHipHeight = humanoid.HipHeight
+
+while character and character.Parent and humanoid and humanoid.Health > 0 and not isRespawning and not AdaptStopResetSequence do
+if LP.Character ~= character then
+isRespawning = true
+break
+end
+
+pcall(function()
+humanoid.HipHeight = 1e30
+humanoid.AutoRotate = true
+
+local rootPart = character:FindFirstChild("HumanoidRootPart")
+if rootPart then
+rootPart.CanCollide = false
+end
+
+for _, part in ipairs(character:GetChildren()) do
+if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+part.CanCollide = false
+end
+end
+end)
+
+if not character or not character.Parent or not humanoid or humanoid.Health <= 0 or LP.Character ~= character then
+AdaptResetSuccessful = true
+break
+end
+attempts += 1
+if attempts >= maxAttempts then break end
+task.wait(AdaptResetMaxDuration)
+end
+
+if not AdaptResetSuccessful and character and character.Parent and humanoid and humanoid.Health > 0 and not isRespawning then
+pcall(function()
+humanoid.Health = 0
+end)
+task.wait(0.1)
+if not character.Parent or humanoid.Health <= 0 then
+AdaptResetSuccessful = true
+end
+end
+
+if not AdaptResetSuccessful and character and character.Parent and humanoid then
+pcall(function()
+humanoid.HipHeight = originalHipHeight
+local rootPart = character:FindFirstChild("HumanoidRootPart")
+if rootPart then
+rootPart.CanCollide = true
+end
+for _, part in ipairs(character:GetChildren()) do
+if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+part.CanCollide = true
+end
+end
+end)
+end
+
+AdaptCameraLocked = false
+AdaptResetCooldown = false
+AdaptResetThread = nil
+AdaptResetCharacter = nil
+AdaptStopResetSequence = false
+end)
+end
+
+function _G.AdaptStopInstantReset()
+AdaptStopResetSequence = true
+if AdaptResetThread then
+pcall(task.cancel, AdaptResetThread)
+AdaptResetThread = nil
+end
+AdaptResetCooldown = false
+AdaptResetCharacter = nil
+AdaptCameraLocked = false
+end
+
+LP.CharacterAdded:Connect(function()
+_G.AdaptStopInstantReset()
+AdaptResetSuccessful = false
+AdaptStopResetSequence = false
+AdaptCameraLocked = false
+end)
+
+RunService.RenderStepped:Connect(function()
+if AdaptCameraLocked and AdaptLockedCameraCFrame and workspace.CurrentCamera then
+workspace.CurrentCamera.CFrame = AdaptLockedCameraCFrame
+end
+end)
+
+local defaults = {
+drop         = UDim2.new(1,-132,0.5,-161),
+autoRight    = UDim2.new(1,-66, 0.5,-161),
+aimbot       = UDim2.new(1,-132,0.5,-95),
+autoLeft     = UDim2.new(1,-66, 0.5,-95),
+tp           = UDim2.new(1,-132,0.5,-29),
+laggerNormal = UDim2.new(1,-66, 0.5,-29),
+antiDesync   = UDim2.new(1,-132,0.5,37),
+carry        = UDim2.new(1,-66, 0.5,37),
+instaReset   = UDim2.new(1,-132,0.5,103),
+}
+
+function _G.AdaptResetMobileButtons()
+_G.AdaptMobileButtonScale = AdaptAutoMobile and 0.90 or 1.00
+_G.AdaptMobileButtonImage = ""
+_G.AdaptHideMobileButtons = false
+_G.AdaptMobileButtonShape = "ROUNDED"
+_G.AdaptMobileButtonPositions = {}
+for key, defaultPos in pairs(defaults) do
+local entry = mobileButtons[key]
+local holder = entry and entry.holder
+if holder then
+holder.Position = defaultPos
+end
+end
+_G.AdaptApplyMobileButtonSize()
+_G.AdaptApplyMobileButtonsHidden()
+_G.AdaptApplyMobileButtonShape()
+_G.AdaptApplyMobileButtonImage()
+_G.AdaptApplyMobileButtonShape()
+if type(saveAdaptConfig) == "function" then pcall(saveAdaptConfig) end
+end
+
+makeButton("drop", "DROP\nBRAINROT", defaults.drop, function(btn)
+if runDropBrainrot then runDropBrainrot() elseif runDrop then runDrop() end
+pulse(btn)
+end)
+
+local instantResetBtn = makeButton("instaReset", "INSTANT RESET", defaults.instaReset, function(btn)
+if _G.AdaptInstantReset then
+_G.AdaptInstantReset()
+end
+pulse(btn)
+end, UDim2.new(0,124,0,58))
+
+if instantResetBtn then
+instantResetBtn.Name = "Instant Reset"
+instantResetBtn.Visible = true
+local instantHolder = instantResetBtn.Parent
+if instantHolder then
+instantHolder.Name = "Instant Reset Holder"
+instantHolder.Visible = true
+instantHolder.Size = UDim2.new(0,124,0,58)
+instantHolder.Position = defaults.instaReset
+instantHolder.ZIndex = 1000
+end
+end
+
+makeButton("autoLeft", "AUTO LEFT", defaults.autoLeft, function()
+if _G.AdaptSetAutoLeft then _G.AdaptSetAutoLeft(not autoLeftEnabled) end
+end)
+
+makeButton("aimbot", "BAT AIMBOT", defaults.aimbot, function(btn)
+if _G.AdaptSafeModeIsLocked and _G.AdaptSafeModeIsLocked() then return end
+selectedAimbotMode = "Normal"
+if _G.AdaptToggleSelectedAimbot then _G.AdaptToggleSelectedAimbot() end
+task.delay(0.03, function()
+setActive(btn, _G.AdaptNormalAimbotOn == true)
+end)
+end)
+
+makeButton("autoRight", "AUTO RIGHT", defaults.autoRight, function()
+if _G.AdaptSetAutoRight then _G.AdaptSetAutoRight(not autoRightEnabled) end
+end)
+
+makeButton("laggerNormal", "LAGGER MODE", defaults.laggerNormal, function(btn)
+if setSpeedMode then
+if currentSpeedMode == "Lagger" or currentSpeedMode == "Lagger Carry" then
+setSpeedMode("Normal")
+else
+setSpeedMode("Lagger")
+end
+end
+task.delay(0.03,function()
+setActive(btn,currentSpeedMode=="Lagger" or currentSpeedMode=="Lagger Carry")
+end)
+end)
+
+makeButton("antiDesync", "TP BAT", defaults.antiDesync, function(btn)
+if _G.AdaptSafeModeIsLocked and _G.AdaptSafeModeIsLocked() then return end
+if _G.AdaptToggleAntiDesyncAimbot then
+_G.AdaptToggleAntiDesyncAimbot()
+end
+task.delay(0.03, function()
+setActive(btn, _G.AdaptAntiDesyncAimbotOn == true)
+end)
+end)
+
+makeButton("tp", "TP DOWN", defaults.tp, function(btn)
+if runTPFloor then runTPFloor() end
+pulse(btn)
+end)
+
+makeButton("carry", "CARRY SPEED", defaults.carry, function()
+if setSpeedMode then
+setSpeedMode(currentSpeedMode == "Carry" and "Normal" or "Carry")
+end
+end)
+
+task.defer(function()
+task.wait(0.15)
+local entry = mobileButtons and mobileButtons.instaReset
+local holder = entry and entry.holder
+if holder then
+holder.Visible = true
+holder.Size = UDim2.new(0,124,0,58)
+holder.Position = getSavedMobileButtonPosition("instaReset", defaults.instaReset)
+holder.ZIndex = 1000
+end
+local btn = entry and entry.btn
+if btn then
+btn.Visible = true
+btn.Name = "Instant Reset"
+end
+end)
+
+_G.AdaptApplyMobileButtonSize()
+_G.AdaptApplyMobileButtonsHidden()
+
+task.defer(function()
+    task.wait(0.15)
+    if mobileGui then
+        mobileGui.Enabled = not (_G.AdaptHideMobileButtons == true)
+    end
+    pcall(_G.AdaptApplyMobileButtonsHidden)
+end)
+
+RunService.Heartbeat:Connect(function()
+if mobileButtons.autoLeft then mobileButtons.autoLeft.setActive(autoLeftEnabled == true) end
+if mobileButtons.autoRight then mobileButtons.autoRight.setActive(autoRightEnabled == true) end
+if mobileButtons.aimbot then mobileButtons.aimbot.setActive(_G.AdaptNormalAimbotOn == true) end
+if mobileButtons.antiDesync then mobileButtons.antiDesync.setActive(_G.AdaptAntiDesyncAimbotOn == true) end
+if mobileButtons.carry then mobileButtons.carry.setActive(currentSpeedMode == "Carry") end
+if mobileButtons.laggerNormal then mobileButtons.laggerNormal.setActive(currentSpeedMode == "Lagger" or currentSpeedMode == "Lagger Carry") end
+end)
+end)
+
+task.defer(function()
+task.wait(1)
+pcall(function()
+_G.AdaptApplyMovingEdgeLights(PlayerGui)
+end)
+end)
+
+pcall(function()
+if hookfunction and newcclosure then
+local _xKickRemote = nil
+local _xOldFire
+_xOldFire = hookfunction(Instance.new("RemoteEvent").FireServer, newcclosure(function(self, ...)
+if not _xKickRemote and typeof(self) == "Instance" and self:IsA("RemoteEvent") and self.Name:sub(1,3) == "RE/" then
+_xKickRemote = self
+end
+return _xOldFire(self, ...)
+end))
+end
+end)
+
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
+print("Remake By Xlu0 Anti Cheat Bypass By Prime")
